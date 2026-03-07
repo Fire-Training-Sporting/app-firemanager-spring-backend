@@ -1,15 +1,15 @@
-package com.sptech.school.fira_manager_api.dto;
+package com.sptech.school.fira_manager_api.model;
 
 public class Professor {
 
     private int id;
     private String nome;
-    private FuncaoProfessor funcao;
+    private EFuncaoProfessor funcao;
 
     public Professor() {
     }
 
-    public Professor(int id, String nome, FuncaoProfessor funcao) {
+    public Professor(int id, String nome, EFuncaoProfessor funcao) {
         this.id = id;
         this.nome = nome;
         this.funcao = funcao;
@@ -31,11 +31,11 @@ public class Professor {
         this.nome = nome;
     }
 
-    public FuncaoProfessor getFuncao() {
+    public EFuncaoProfessor getFuncao() {
         return funcao;
     }
 
-    public void setFuncao(FuncaoProfessor funcao) {
+    public void setFuncao(EFuncaoProfessor funcao) {
         this.funcao = funcao;
     }
 }

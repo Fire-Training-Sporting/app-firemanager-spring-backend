@@ -1,4 +1,4 @@
-package com.sptech.school.fira_manager_api.dto;
+package com.sptech.school.fira_manager_api.model;
 
 public class Local {
 

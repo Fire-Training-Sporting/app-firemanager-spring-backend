@@ -30,7 +30,15 @@ public class AgendamentoController {
         ResponseEntity<String> validacao = validarAgendamento(agendamento);
         if (validacao != null) return validacao;
 
-        Boolean resposta = agendamentoService.criarNovoAgendamento(agendamento.getId(), agendamento.getAluno(), agendamento.getProfessor(), agendamento.getData(), agendamento.getLocal(), agendamento.getSaldo(), agendamento.getServico(), agendamento.getObservacao());
+        Boolean resposta = agendamentoService.criarNovoAgendamento(
+                agendamento.getId(),
+                agendamento.getAluno(),
+                agendamento.getProfessor(),
+                agendamento.getData(),
+                agendamento.getLocal(),
+                agendamento.getSaldo(),
+                agendamento.getServico(),
+                agendamento.getObservacao());
 
         if (resposta.equals(true))
             return ResponseEntity.status(201).body("Agendamento criado com sucesso!");
@@ -40,7 +48,7 @@ public class AgendamentoController {
 
     @GetMapping
     public ResponseEntity<List<Agendamento>> buscarAgendamento() {
-        return ResponseEntity.ok(agendamentoService.obterAgendamentos());
+        return ResponseEntity.status(200).body(agendamentoService.obterAgendamentos());
     }
 
     @PutMapping("/{id}")
@@ -60,7 +68,7 @@ public class AgendamentoController {
         );
 
         if (atualizado.equals(true)) {
-            return ResponseEntity.ok("Agendamento atualizado com sucesso!");
+            return ResponseEntity.status(200).body("Agendamento atualizado com sucesso!");
         }
 
         return ResponseEntity.status(404).body("Nenhum agendamento encontrado para atualizar");
@@ -71,7 +79,7 @@ public class AgendamentoController {
         Boolean deletado = agendamentoService.deletarAgendamento(id);
 
         if (deletado.equals(true)) {
-            return ResponseEntity.ok("Agendamento deletado com sucesso!");
+            return ResponseEntity.status(204).body("Agendamento deletado com sucesso!");
         }
 
         return ResponseEntity.status(404).body("Nenhum agendamento encontrado para deletar");
