@@ -1,6 +1,5 @@
 package com.sptech.school.fira_manager_api.service;
 
-import com.sptech.school.fira_manager_api.dto.Agendamento;
 import com.sptech.school.fira_manager_api.dto.Servico;
 import org.springframework.stereotype.Service;
 
@@ -8,10 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class ServicosService {
+public class ServicoService {
 
     private final List<Servico> servicos = new ArrayList<>();
-    private Long id = 0L;
+    private Long id = -1L;
 
     public Servico adicionarServico(String servicoNome) {
 
