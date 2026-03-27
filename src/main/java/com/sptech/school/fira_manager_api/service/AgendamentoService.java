@@ -1,7 +1,6 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.Agendamento;
-
 import com.sptech.school.fira_manager_api.model.*;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +25,7 @@ public class AgendamentoService {
         if (agendamento.getData().isBefore(LocalDateTime.now())) return false;
 
         Saldo saldo = saldoService.buscarPorAlunoId(
-                agendamento.getAluno().getId()
+                agendamento.getAlunoId()
         );
 
         if (saldo == null || saldo.getQuanidade() <= 0) {
@@ -34,8 +33,6 @@ public class AgendamentoService {
         }
 
         saldo.setQuanidade(saldo.getQuanidade() - 1);
-
-        agendamento.setSaldo(saldo);
 
         agendamentos.add(agendamento);
 
@@ -51,8 +48,8 @@ public class AgendamentoService {
         for (int i = 0; i < agendamentos.size(); i++) {
 
             if (Objects.equals(agendamentos.get(i).getId(), id)) {
-
-                novo.setSaldo(agendamentos.get(i).getSaldo());
+                
+                Saldo saldo = saldoService.buscarPorAlunoId(novo.getAlunoId());
 
                 agendamentos.set(i, novo);
                 return true;
@@ -76,7 +73,7 @@ public class AgendamentoService {
                 long horas = Duration.between(agora, dataAula).toHours();
 
                 Saldo saldo = saldoService.buscarPorAlunoId(
-                        agendamento.getAluno().getId()
+                        agendamento.getAlunoId()
                 );
 
                 if (horas >= 24) {
