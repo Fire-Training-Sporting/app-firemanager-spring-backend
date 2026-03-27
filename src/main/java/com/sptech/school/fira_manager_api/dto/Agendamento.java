@@ -9,61 +9,67 @@ import java.time.LocalDateTime;
 
 public class Agendamento {
 
-    private Integer id;
-    private Aluno aluno;
-    private Professor professor;
+    private Long id;
+    private Long alunoId;
+    private Long professorId;
+    private Long localId;
+    private Long servicoId;
     private LocalDateTime data;
-    private Local local;
-    private Saldo saldo;
-    private Servico servico;
     private String observacao;
 
     public Agendamento() {
     }
 
-    public Agendamento(Integer id, Aluno aluno, Professor professor, LocalDateTime data, Local local, Saldo saldo, Servico servico, String observacao) {
+    public Agendamento(Long id, Long alunoId, Long professorId,
+                          Long localId, Long servicoId,
+                          LocalDateTime data, String observacao) {
         this.id = id;
-        this.aluno = aluno;
-        this.professor = professor;
+        this.alunoId = alunoId;
+        this.professorId = professorId;
+        this.localId = localId;
+        this.servicoId = servicoId;
         this.data = data;
-        this.local = local;
-        this.saldo = saldo;
-        this.servico = servico;
         this.observacao = observacao;
     }
 
-    public Agendamento(Aluno aluno, Professor professor, LocalDateTime data, Local local, Saldo saldo, Servico servico, String observacao) {
-        this.aluno = aluno;
-        this.professor = professor;
-        this.data = data;
-        this.local = local;
-        this.saldo = saldo;
-        this.servico = servico;
-        this.observacao = observacao;
-    }
-
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public Aluno getAluno() {
-        return aluno;
+    public Long getAlunoId() {
+        return alunoId;
     }
 
-    public void setAluno(Aluno aluno) {
-        this.aluno = aluno;
+    public void setAlunoId(Long alunoId) {
+        this.alunoId = alunoId;
     }
 
-    public Professor getProfessor() {
-        return professor;
+    public Long getProfessorId() {
+        return professorId;
     }
 
-    public void setProfessor(Professor professor) {
-        this.professor = professor;
+    public void setProfessorId(Long professorId) {
+        this.professorId = professorId;
+    }
+
+    public Long getLocalId() {
+        return localId;
+    }
+
+    public void setLocalId(Long localId) {
+        this.localId = localId;
+    }
+
+    public Long getServicoId() {
+        return servicoId;
+    }
+
+    public void setServicoId(Long servicoId) {
+        this.servicoId = servicoId;
     }
 
     public LocalDateTime getData() {
@@ -72,30 +78,6 @@ public class Agendamento {
 
     public void setData(LocalDateTime data) {
         this.data = data;
-    }
-
-    public Local getLocal() {
-        return local;
-    }
-
-    public void setLocal(Local local) {
-        this.local = local;
-    }
-
-    public Saldo getSaldo() {
-        return saldo;
-    }
-
-    public void setSaldo(Saldo saldo) {
-        this.saldo = saldo;
-    }
-
-    public Servico getServico() {
-        return servico;
-    }
-
-    public void setServico(Servico servico) {
-        this.servico = servico;
     }
 
     public String getObservacao() {
