@@ -1,9 +1,10 @@
 package com.sptech.school.fira_manager_api.service;
 
-import com.sptech.school.fira_manager_api.dto.*;
+import com.sptech.school.fira_manager_api.dto.Agendamento;
 import com.sptech.school.fira_manager_api.model.*;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,26 +14,29 @@ import java.util.Objects;
 public class AgendamentoService {
 
     private final List<Agendamento> agendamentos = new ArrayList<>();
+    private final SaldoService saldoService;
 
-    public Boolean criarNovoAgendamento(
-            Integer id,
-            Aluno aluno,
-            Professor professor,
-            LocalDateTime data,
-            Local local,
-            Saldo saldo,
-            Servico servico,
-            String observacao) {
-        Agendamento novoAgendamento = new Agendamento(
-                id,
-                aluno,
-                professor,
-                data,
-                local,
-                saldo,
-                servico,
-                observacao);
-        agendamentos.add(novoAgendamento);
+    public AgendamentoService(SaldoService saldoService) {
+        this.saldoService = saldoService;
+    }
+
+    public Boolean criarNovoAgendamento(Agendamento agendamento) {
+
+        if (agendamento.getData().isBefore(LocalDateTime.now())) return false;
+
+        Saldo saldo = saldoService.buscarPorAlunoId(
+                agendamento.getAluno().getId()
+        );
+
+        if (saldo == null || saldo.getQuanidade() <= 0) {
+            return false;
+        }
+
+        saldo.setQuanidade(saldo.getQuanidade() - 1);
+
+        agendamento.setSaldo(saldo);
+
+        agendamentos.add(agendamento);
 
         return true;
     }
@@ -41,28 +45,15 @@ public class AgendamentoService {
         return agendamentos;
     }
 
-    public Boolean atualizarAgendamento(
-            Integer id,
-            Aluno aluno,
-            Professor professor,
-            LocalDateTime data,
-            Local local,
-            Saldo saldo,
-            Servico servico,
-            String observacao) {
-        for (int i = 0; i < agendamentos.size(); i++) {
-            Agendamento agendamentoAtual = agendamentos.get(i);
+    public Boolean atualizarAgendamento(Integer id, Agendamento novo) {
 
-            if (Objects.equals(agendamentoAtual.getId(), id)) {
-                agendamentos.set(i, new Agendamento(
-                        id,
-                        aluno,
-                        professor,
-                        data,
-                        local,
-                        saldo,
-                        servico,
-                        observacao));
+        for (int i = 0; i < agendamentos.size(); i++) {
+
+            if (Objects.equals(agendamentos.get(i).getId(), id)) {
+
+                novo.setSaldo(agendamentos.get(i).getSaldo());
+
+                agendamentos.set(i, novo);
                 return true;
             }
         }
@@ -70,9 +61,27 @@ public class AgendamentoService {
         return false;
     }
 
-    public Boolean deletarAgendamento(Integer id) {
+    public Boolean cancelarAgendamento(Integer id) {
+
         for (int i = 0; i < agendamentos.size(); i++) {
-            if (Objects.equals(agendamentos.get(i).getId(), id)) {
+
+            Agendamento agendamento = agendamentos.get(i);
+
+            if (Objects.equals(agendamento.getId(), id)) {
+
+                LocalDateTime agora = LocalDateTime.now();
+                LocalDateTime dataAula = agendamento.getData();
+
+                long horas = Duration.between(agora, dataAula).toHours();
+
+                Saldo saldo = saldoService.buscarPorAlunoId(
+                        agendamento.getAluno().getId()
+                );
+
+                if (horas >= 24) {
+                    saldo.setQuanidade(saldo.getQuanidade() + 1);
+                }
+
                 agendamentos.remove(i);
                 return true;
             }

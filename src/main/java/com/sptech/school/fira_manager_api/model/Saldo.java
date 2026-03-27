@@ -2,13 +2,15 @@ package com.sptech.school.fira_manager_api.model;
 
 public class Saldo {
 
+    private Long alunoID;
     private Integer quanidade;
     private Servico servico;
 
     public Saldo() {
     }
 
-    public Saldo(int quanidade, Servico servico) {
+    public Saldo(Long alunoID, Integer quanidade, Servico servico) {
+        this.alunoID = alunoID;
         this.quanidade = quanidade;
         this.servico = servico;
     }
@@ -27,5 +29,17 @@ public class Saldo {
 
     public void setServico(Servico servico) {
         this.servico = servico;
+    }
+
+    public Long getAlunoID() {
+        return alunoID;
+    }
+
+    public void setAlunoID(Long alunoID) {
+        this.alunoID = alunoID;
+    }
+
+    public void setQuanidade(Integer quanidade) {
+        this.quanidade = quanidade;
     }
 }
