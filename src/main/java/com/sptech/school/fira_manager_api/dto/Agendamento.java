@@ -1,6 +1,9 @@
 package com.sptech.school.fira_manager_api.dto;
 
-import com.sptech.school.fira_manager_api.model.*;
+import com.sptech.school.fira_manager_api.model.Aluno;
+import com.sptech.school.fira_manager_api.model.Local;
+import com.sptech.school.fira_manager_api.model.Professor;
+import com.sptech.school.fira_manager_api.model.Saldo;
 
 import java.time.LocalDateTime;
 
