@@ -1,7 +1,7 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.model.Saldo;
-import com.sptech.school.fira_manager_api.model.Servico;
+import com.sptech.school.fira_manager_api.dto.Servico;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
