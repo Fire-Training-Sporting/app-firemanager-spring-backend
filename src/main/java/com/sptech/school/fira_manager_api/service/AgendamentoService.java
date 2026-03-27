@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.Agendamento;
+
 import com.sptech.school.fira_manager_api.model.*;
 import org.springframework.stereotype.Service;
 

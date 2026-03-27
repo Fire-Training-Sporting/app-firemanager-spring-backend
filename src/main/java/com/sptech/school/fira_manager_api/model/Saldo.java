@@ -1,5 +1,7 @@
 package com.sptech.school.fira_manager_api.model;
 
+import com.sptech.school.fira_manager_api.dto.Servico;
+
 public class Saldo {
 
     private Long alunoID;
