@@ -21,38 +21,33 @@ public class ServicoService {
         this.servicoRepository = servicoRepository;
     }
 
-    public Servico criarServico(Servico servico) {
-        return servicoRepository.findByNome("Luan");
+    public Servico criarServico(ServicoDTO dto) {
+        Servico servicoNovo = new Servico(dto.getNome());
+        return servicoRepository.save(servicoNovo);
     }
 
     public List<Servico> buscarServicos() {
-        return Collections.singletonList(servicoRepository.findById(2L)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+        List<Servico> servicos = servicoRepository.findAll();
+
+        return servicos;
     }
 
-//    public ServicoDTO atualizarServico(Long id, ServicoDTO novoNome) {
-//
-//        for (int i = 0; i < servicos.size(); i++) {
-//
-//            if (id.equals(servicos.get(i).getId())) {
-//                servicos.get(i).setNome(novoNome.getNome());
-//                return servicos.get(i);
-//            }
-//        }
-//
-//        return null;
-//    }
-//
-//    public Boolean deletarServico(Long id) {
-//
-//        for (int i = 0; i < servicos.size(); i++) {
-//
-//            if (servicos.get(i).getId() == id) {
-//                servicos.remove(servicos.get(i));
-//                return true;
-//            }
-//        }
-//
-//        return false;
-//    }
+    public Servico buscarServicoPorId(Long id) {
+        return servicoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O serviço não existe"));
+    }
+
+    public Servico atualizarServicoPorId(Long id, ServicoDTO dto) {
+        Servico servicoNovo = servicoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O serviço não existe"));
+
+        servicoNovo.setNome(dto.getNome());
+        return servicoRepository.save(servicoNovo);
+    }
+
+    public void deletarServicoPorId(Long id) {
+        if (!servicoRepository.existsById(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O serviço não existe");
+
+        servicoRepository.deleteById(id);
+    }
 }
