@@ -1,20 +1,14 @@
 package com.sptech.school.fira_manager_api.dto;
 
-public class Servico {
+public class ServicoDTO {
 
-    private Long id;
     private String nome;
 
-    public Servico() {
+    public ServicoDTO() {
     }
 
-    public Servico(Long id, String nome) {
-        this.id = id;
+    public ServicoDTO(String nome) {
         this.nome = nome;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public String getNome() {

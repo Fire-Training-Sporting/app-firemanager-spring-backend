@@ -1,17 +1,17 @@
 package com.sptech.school.fira_manager_api.model;
 
-import com.sptech.school.fira_manager_api.dto.Servico;
+import com.sptech.school.fira_manager_api.dto.ServicoDTO;
 
 public class Saldo {
 
     private Long alunoID;
     private Integer quanidade;
-    private Servico servico;
+    private ServicoDTO servico;
 
     public Saldo() {
     }
 
-    public Saldo(Long alunoID, Integer quanidade, Servico servico) {
+    public Saldo(Long alunoID, Integer quanidade, ServicoDTO servico) {
         this.alunoID = alunoID;
         this.quanidade = quanidade;
         this.servico = servico;
@@ -25,11 +25,11 @@ public class Saldo {
         this.quanidade = quanidade;
     }
 
-    public Servico getServico() {
+    public ServicoDTO getServico() {
         return servico;
     }
 
-    public void setServico(Servico servico) {
+    public void setServico(ServicoDTO servico) {
         this.servico = servico;
     }
 
