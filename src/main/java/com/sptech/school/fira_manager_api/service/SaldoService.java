@@ -1,12 +1,11 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.model.Saldo;
-import com.sptech.school.fira_manager_api.dto.Servico;
+import com.sptech.school.fira_manager_api.dto.ServicoDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class SaldoService {
@@ -26,7 +25,7 @@ public class SaldoService {
         return null;
     }
 
-    public Saldo adicionarSaldo(Long alunoId, Integer valor, Servico servico) {
+    public Saldo adicionarSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
         if (alunoId == null || valor == null || valor <= 0) {
             return null;
         }
@@ -49,7 +48,7 @@ public class SaldoService {
         return saldoExistente;
     }
 
-    public Saldo atualizarSaldo(Long alunoId, Integer valor, Servico servico) {
+    public Saldo atualizarSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
         if (alunoId == null || valor == null || valor < 0) {
             return null;
         }
@@ -69,7 +68,7 @@ public class SaldoService {
         return saldoExistente;
     }
 
-    public Saldo removerSaldo(Long alunoId, Integer valor, Servico servico) {
+    public Saldo removerSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
         if (alunoId == null || valor == null || valor <= 0) {
             return null;
         }
