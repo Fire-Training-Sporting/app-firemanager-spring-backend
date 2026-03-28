@@ -30,29 +30,29 @@ public class ServicoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
     }
 
-    public ServicoDTO atualizarServico(Long id, ServicoDTO novoNome) {
-
-        for (int i = 0; i < servicos.size(); i++) {
-
-            if (id.equals(servicos.get(i).getId())) {
-                servicos.get(i).setNome(novoNome.getNome());
-                return servicos.get(i);
-            }
-        }
-
-        return null;
-    }
-
-    public Boolean deletarServico(Long id) {
-
-        for (int i = 0; i < servicos.size(); i++) {
-
-            if (servicos.get(i).getId() == id) {
-                servicos.remove(servicos.get(i));
-                return true;
-            }
-        }
-
-        return false;
-    }
+//    public ServicoDTO atualizarServico(Long id, ServicoDTO novoNome) {
+//
+//        for (int i = 0; i < servicos.size(); i++) {
+//
+//            if (id.equals(servicos.get(i).getId())) {
+//                servicos.get(i).setNome(novoNome.getNome());
+//                return servicos.get(i);
+//            }
+//        }
+//
+//        return null;
+//    }
+//
+//    public Boolean deletarServico(Long id) {
+//
+//        for (int i = 0; i < servicos.size(); i++) {
+//
+//            if (servicos.get(i).getId() == id) {
+//                servicos.remove(servicos.get(i));
+//                return true;
+//            }
+//        }
+//
+//        return false;
+//    }
 }

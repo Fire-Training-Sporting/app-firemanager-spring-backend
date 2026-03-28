@@ -29,27 +29,27 @@ public class ServicoController {
     public ResponseEntity<List<Servico>> buscarServicos() {
         return ResponseEntity.ok(servicoService.buscarServicos());
     }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<ServicoDTO> atualizarServico(@PathVariable Long id, @RequestBody ServicoDTO novoNome) {
-
-        if (id == null) return ResponseEntity.status(400).build();
-
-        ServicoDTO atualizado = servicoService.atualizarServico(id, novoNome);
-
-        if (atualizado == null) return ResponseEntity.status(404).build();
-
-        return ResponseEntity.status(200).body(atualizado);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Boolean> deletarServico(@PathVariable Long id) {
-
-        if (id == null) return ResponseEntity.status(400).build();
-
-        Boolean deletado = servicoService.deletarServico(id);
-
-        if (deletado) return ResponseEntity.status(204).body(deletado);
-        return ResponseEntity.status(404).body(deletado);
-    }
+//
+//    @PutMapping("/{id}")
+//    public ResponseEntity<ServicoDTO> atualizarServico(@PathVariable Long id, @RequestBody ServicoDTO novoNome) {
+//
+//        if (id == null) return ResponseEntity.status(400).build();
+//
+//        ServicoDTO atualizado = servicoService.atualizarServico(id, novoNome);
+//
+//        if (atualizado == null) return ResponseEntity.status(404).build();
+//
+//        return ResponseEntity.status(200).body(atualizado);
+//    }
+//
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<Boolean> deletarServico(@PathVariable Long id) {
+//
+//        if (id == null) return ResponseEntity.status(400).build();
+//
+//        Boolean deletado = servicoService.deletarServico(id);
+//
+//        if (deletado) return ResponseEntity.status(204).body(deletado);
+//        return ResponseEntity.status(404).body(deletado);
+//    }
 }
