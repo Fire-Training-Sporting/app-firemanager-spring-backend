@@ -1,16 +1,32 @@
-package com.sptech.school.fira_manager_api.dto;
+package com.sptech.school.fira_manager_api.model;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+
+@Entity
+@Table(name = "tb_condominios")
 public class Condominio {
 
-    private Integer id;
+    @Id
+    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "Cidade é um campo obrigatório")
     private String cidade;
+
+    @NotBlank(message = "Bairro é um campo obrigatório")
     private String bairro;
+
+    @NotBlank(message = "Rua é um campo obrigatório")
     private String rua;
+
+    @NotBlank(message = "Número é um campo obrigatório")
     private String numero;
-    // private String cep (API ?)
 
+    public Condominio() {
+    }
 
-    public Condominio(Integer id, String cidade, String bairro, String rua, String numero) {
+    public Condominio(Long id, String cidade, String bairro, String rua, String numero) {
         this.id = id;
         this.cidade = cidade;
         this.bairro = bairro;
@@ -18,11 +34,18 @@ public class Condominio {
         this.numero = numero;
     }
 
-    public Integer getId() {
+    public Condominio(String cidade, String bairro, String rua, String numero) {
+        this.cidade = cidade;
+        this.bairro = bairro;
+        this.rua = rua;
+        this.numero = numero;
+    }
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
