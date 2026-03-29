@@ -1,49 +1,52 @@
 package com.sptech.school.fira_manager_api.service;
 
-import com.sptech.school.fira_manager_api.dto.Permissao;
+import com.sptech.school.fira_manager_api.dto.PermissaoDTO;
+import com.sptech.school.fira_manager_api.model.Permissao;
+import com.sptech.school.fira_manager_api.repository.PermissaoRepository;
+import com.sun.net.httpserver.HttpsServer;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
+
 
 @Service
 public class PermissaoService {
 
-    private final List<Permissao> permissoes = new ArrayList<>();
+    private final PermissaoRepository permissaoRepository;
 
-    public Boolean adicionarNovaPermissao(Integer id, String nome) {
-        Permissao novaPermissao = new Permissao(id, nome);
-        permissoes.add(novaPermissao);
+    public PermissaoService(PermissaoRepository permissaoRepository) {
+        this.permissaoRepository = permissaoRepository;
+    }
 
-        return true;
+
+    public Permissao adicionarNovaPermissao(PermissaoDTO dto) {
+        Permissao novaPermissao = new Permissao(dto.getNome());
+        return permissaoRepository.save(novaPermissao);
     }
 
     public List<Permissao> obterPermissoes() {
+        List<Permissao> permissoes = permissaoRepository.findAll();
+
         return permissoes;
     }
 
-    public Boolean atualizarPermissao(Integer id, String nome) {
-        for (int i = 0; i < permissoes.size(); i++) {
-            Permissao permissaoAtual = permissoes.get(i);
+    public Permissao atualizarPermissao(Long id, PermissaoDTO dto) {
+        Permissao novaPermissao = permissaoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Permissão solicitada não encontrada."));
 
-            if (Objects.equals(permissaoAtual.getId(), id)) {
-                permissoes.set(i, new Permissao(id, nome));
-                return true;
-            }
-        }
+        novaPermissao.setNome(dto.getNome());
 
-        return false;
+        return permissaoRepository.save(novaPermissao);
     }
 
-    public Boolean deletarPermissao(Integer id) {
-        for (int i = 0; i < permissoes.size(); i++) {
-            if (Objects.equals(permissoes.get(i).getId(), id)) {
-                permissoes.remove(i);
-                return true;
-            }
-        }
+    public void deletarPermissao(Long id) {
+        if (!permissaoRepository.existsById(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "A Permissão não existe");
 
-        return false;
+        permissaoRepository.deleteById(id);
     }
 }
