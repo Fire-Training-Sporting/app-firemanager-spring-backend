@@ -1,43 +1,42 @@
 package com.sptech.school.fira_manager_api.dto;
 
-import com.sptech.school.fira_manager_api.model.Aluno;
-import com.sptech.school.fira_manager_api.model.Local;
-import com.sptech.school.fira_manager_api.model.Professor;
-import com.sptech.school.fira_manager_api.model.Saldo;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-public class Agendamento {
+@Schema(description = "DTO para criação e atualização de agendamentos")
+public class AgendamentoDTO {
 
-    private Long id;
+    @Schema(description = "ID do aluno", example = "1")
     private Long alunoId;
+
+    @Schema(description = "ID do professor", example = "2")
     private Long professorId;
+
+    @Schema(description = "ID do local", example = "3")
     private Long localId;
+
+    @Schema(description = "ID do serviço", example = "4")
     private Long servicoId;
+
+    @Schema(description = "Data e hora do agendamento", example = "2026-04-10T14:30:00")
     private LocalDateTime data;
+
+    @Schema(description = "Observações adicionais", example = "Aluno prefere atendimento rápido")
     private String observacao;
 
-    public Agendamento() {
+    public AgendamentoDTO() {
     }
 
-    public Agendamento(Long id, Long alunoId, Long professorId,
+    public AgendamentoDTO(Long alunoId, Long professorId,
                           Long localId, Long servicoId,
                           LocalDateTime data, String observacao) {
-        this.id = id;
         this.alunoId = alunoId;
         this.professorId = professorId;
         this.localId = localId;
         this.servicoId = servicoId;
         this.data = data;
         this.observacao = observacao;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public Long getAlunoId() {

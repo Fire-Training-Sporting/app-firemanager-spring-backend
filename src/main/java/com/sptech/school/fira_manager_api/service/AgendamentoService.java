@@ -1,90 +1,77 @@
 package com.sptech.school.fira_manager_api.service;
 
-import com.sptech.school.fira_manager_api.dto.Agendamento;
-import com.sptech.school.fira_manager_api.model.*;
+import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
+import com.sptech.school.fira_manager_api.model.Saldo;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class AgendamentoService {
 
-    private final List<Agendamento> agendamentos = new ArrayList<>();
+    private final List<AgendamentoDTO> agendamentos = new ArrayList<>();
+    private final Map<Long, AgendamentoDTO> mapa = new HashMap<>();
+    private Long contadorId = 1L;
+
     private final SaldoService saldoService;
 
     public AgendamentoService(SaldoService saldoService) {
         this.saldoService = saldoService;
     }
 
-    public Boolean criarNovoAgendamento(Agendamento agendamento) {
+    public Boolean criarNovoAgendamento(AgendamentoDTO dto) {
 
-        if (agendamento.getData().isBefore(LocalDateTime.now())) return false;
+        if (dto.getData().isBefore(LocalDateTime.now())) return false;
 
-        Saldo saldo = saldoService.buscarPorAlunoId(
-                agendamento.getAlunoId()
-        );
+        Saldo saldo = saldoService.buscarPorAlunoId(dto.getAlunoId());
 
-        if (saldo == null || saldo.getQuanidade() <= 0) {
-            return false;
-        }
+        if (saldo == null || saldo.getQuantidade() <= 0) return false;
 
-        saldo.setQuanidade(saldo.getQuanidade() - 1);
+        saldo.setQuantidade(saldo.getQuantidade() - 1);
 
-        agendamentos.add(agendamento);
+        mapa.put(contadorId++, dto);
+        agendamentos.add(dto);
 
         return true;
     }
 
-    public List<Agendamento> obterAgendamentos() {
+    public List<AgendamentoDTO> obterAgendamentos() {
         return agendamentos;
     }
 
-    public Boolean atualizarAgendamento(Integer id, Agendamento novo) {
+    public Boolean atualizarAgendamento(Long id, AgendamentoDTO novo) {
 
-        for (int i = 0; i < agendamentos.size(); i++) {
+        if (!mapa.containsKey(id)) return false;
 
-            if (Objects.equals(agendamentos.get(i).getId(), id)) {
-                
-                Saldo saldo = saldoService.buscarPorAlunoId(novo.getAlunoId());
+        if (novo.getData().isBefore(LocalDateTime.now())) return false;
 
-                agendamentos.set(i, novo);
-                return true;
-            }
-        }
+        mapa.put(id, novo);
 
-        return false;
+        return true;
     }
 
-    public Boolean cancelarAgendamento(Integer id) {
+    public Boolean cancelarAgendamento(Long id) {
 
-        for (int i = 0; i < agendamentos.size(); i++) {
+        AgendamentoDTO dto = mapa.get(id);
 
-            Agendamento agendamento = agendamentos.get(i);
+        if (dto == null) return false;
 
-            if (Objects.equals(agendamento.getId(), id)) {
+        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime dataAula = dto.getData();
 
-                LocalDateTime agora = LocalDateTime.now();
-                LocalDateTime dataAula = agendamento.getData();
+        long horas = Duration.between(agora, dataAula).toHours();
 
-                long horas = Duration.between(agora, dataAula).toHours();
+        Saldo saldo = saldoService.buscarPorAlunoId(dto.getAlunoId());
 
-                Saldo saldo = saldoService.buscarPorAlunoId(
-                        agendamento.getAlunoId()
-                );
-
-                if (horas >= 24) {
-                    saldo.setQuanidade(saldo.getQuanidade() + 1);
-                }
-
-                agendamentos.remove(i);
-                return true;
-            }
+        if (saldo != null && horas >= 24) {
+            saldo.setQuantidade(saldo.getQuantidade() + 1);
         }
 
-        return false;
+        mapa.remove(id);
+        agendamentos.remove(dto);
+
+        return true;
     }
 }

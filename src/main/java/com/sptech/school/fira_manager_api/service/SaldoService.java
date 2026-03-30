@@ -1,97 +1,57 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.model.Saldo;
-import com.sptech.school.fira_manager_api.dto.ServicoDTO;
+import com.sptech.school.fira_manager_api.repository.SaldoRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class SaldoService {
 
-    private final List<Saldo> saldos = new ArrayList<>();
+    private final SaldoRepository repository;
+
+    public SaldoService(SaldoRepository repository) {
+        this.repository = repository;
+    }
 
     public List<Saldo> listar() {
-        return saldos;
+        return repository.findAll();
     }
 
     public Saldo buscarPorAlunoId(Long alunoId) {
-        for (Saldo saldo : saldos) {
-            if (saldo.getAlunoID().equals(alunoId)) {
-                return saldo;
-            }
-        }
-        return null;
+        return repository.findAll()
+                .stream()
+                .filter(s -> s.getAlunoId().equals(alunoId))
+                .findFirst()
+                .orElse(null);
     }
 
-    public Saldo adicionarSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
-        if (alunoId == null || valor == null || valor <= 0) {
-            return null;
+    public Saldo adicionarSaldo(Long alunoId, Integer valor) {
+
+        if (alunoId == null || valor == null || valor <= 0) return null;
+
+        Saldo saldo = buscarPorAlunoId(alunoId);
+
+        if (saldo == null) {
+            saldo = new Saldo(alunoId, valor);
+        } else {
+            saldo.setQuantidade(saldo.getQuantidade() + valor);
         }
 
-        Saldo saldoExistente = buscarPorAlunoId(alunoId);
-
-        if (saldoExistente == null) {
-            Saldo novoSaldo = new Saldo(alunoId, valor, servico);
-            saldos.add(novoSaldo);
-            return novoSaldo;
-        }
-
-        int novoValor = saldoExistente.getQuanidade() + valor;
-        saldoExistente.setQuanidade(novoValor);
-
-        if (servico != null) {
-            saldoExistente.setServico(servico);
-        }
-
-        return saldoExistente;
+        return repository.save(saldo);
     }
 
-    public Saldo atualizarSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
-        if (alunoId == null || valor == null || valor < 0) {
-            return null;
-        }
+    public Saldo removerSaldo(Long alunoId, Integer valor) {
 
-        Saldo saldoExistente = buscarPorAlunoId(alunoId);
+        if (alunoId == null || valor == null || valor <= 0) return null;
 
-        if (saldoExistente == null) {
-            return null;
-        }
+        Saldo saldo = buscarPorAlunoId(alunoId);
 
-        saldoExistente.setQuanidade(valor);
+        if (saldo == null || saldo.getQuantidade() < valor) return null;
 
-        if (servico != null) {
-            saldoExistente.setServico(servico);
-        }
+        saldo.setQuantidade(saldo.getQuantidade() - valor);
 
-        return saldoExistente;
-    }
-
-    public Saldo removerSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
-        if (alunoId == null || valor == null || valor <= 0) {
-            return null;
-        }
-
-        Saldo saldoExistente = buscarPorAlunoId(alunoId);
-
-        if (saldoExistente == null) {
-            return null;
-        }
-
-        int saldoAtual = saldoExistente.getQuanidade();
-        int novoSaldo = saldoAtual - valor;
-
-        if (novoSaldo < 0) {
-            return null;
-        }
-
-        saldoExistente.setQuanidade(novoSaldo);
-
-        if (servico != null) {
-            saldoExistente.setServico(servico);
-        }
-
-        return saldoExistente;
+        return repository.save(saldo);
     }
 }

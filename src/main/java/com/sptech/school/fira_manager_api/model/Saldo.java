@@ -1,47 +1,48 @@
 package com.sptech.school.fira_manager_api.model;
 
-import com.sptech.school.fira_manager_api.dto.ServicoDTO;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
+@Entity
+@Table(name = "saldo")
 public class Saldo {
 
-    private Long alunoID;
-    private Integer quanidade;
-    private ServicoDTO servico;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    public Saldo() {
+    @NotNull(message = "Aluno é obrigatório")
+    private Long alunoId;
+
+    @NotNull(message = "Quantidade é obrigatória")
+    @Min(value = 0, message = "Quantidade não pode ser negativa")
+    private Integer quantidade;
+
+    public Saldo() {}
+
+    public Saldo(Long alunoId, Integer quantidade) {
+        this.alunoId = alunoId;
+        this.quantidade = quantidade;
     }
 
-    public Saldo(Long alunoID, Integer quanidade, ServicoDTO servico) {
-        this.alunoID = alunoID;
-        this.quanidade = quanidade;
-        this.servico = servico;
+    public Long getId() {
+        return id;
     }
 
-    public int getQuanidade() {
-        return quanidade;
+    public Long getAlunoId() {
+        return alunoId;
     }
 
-    public void setQuanidade(int quanidade) {
-        this.quanidade = quanidade;
+    public void setAlunoId(Long alunoId) {
+        this.alunoId = alunoId;
     }
 
-    public ServicoDTO getServico() {
-        return servico;
+    public Integer getQuantidade() {
+        return quantidade;
     }
 
-    public void setServico(ServicoDTO servico) {
-        this.servico = servico;
-    }
-
-    public Long getAlunoID() {
-        return alunoID;
-    }
-
-    public void setAlunoID(Long alunoID) {
-        this.alunoID = alunoID;
-    }
-
-    public void setQuanidade(Integer quanidade) {
-        this.quanidade = quanidade;
+    public void setQuantidade(Integer quantidade) {
+        this.quantidade = quantidade;
     }
 }
