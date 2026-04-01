@@ -1,5 +1,7 @@
 package com.sptech.school.fira_manager_api.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.ETipoUsuario;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -7,7 +9,7 @@ import jakarta.validation.constraints.*;
 @Schema(name = "UsuarioDTO", description = "DTO para cadastro ou atualização de usuário")
 public class UsuarioDTO {
 
-    @Schema(description = "Tipo do usuário", example = "ADMINISTRATIVO", required = true)
+    @Schema(description = "Tipo do usuário", example = "ALUNO", required = true)
     @NotNull(message = "Tipo de usuário é obrigatório")
     private ETipoUsuario tipoUsuario;
 
@@ -28,9 +30,11 @@ public class UsuarioDTO {
     @Schema(description = "Senha do usuário (mínimo 6 caracteres)", example = "senha123", required = true)
     @NotBlank(message = "Senha é obrigatória")
     @Size(min = 6, message = "Senha deve conter no mínimo 6 caracteres")
+    @JsonIgnore
     private String senha;
 
-//    private Condominio condominio;
+    @Schema(description = "Condomínio em que o aluno recebe aulas", example = "1", required = false)
+    private Long condominio;
 
 
     public ETipoUsuario getTipoUsuario() {
@@ -71,5 +75,13 @@ public class UsuarioDTO {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public Long getCondominio() {
+        return condominio;
+    }
+
+    public void setCondominio(Long condominio) {
+        this.condominio = condominio;
     }
 }

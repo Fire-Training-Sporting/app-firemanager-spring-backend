@@ -6,6 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(name = "CondominioDTO", description = "DTO usado para criar ou atualizar um Condominio.")
 public class CondominioDTO {
 
+    @Schema(description = "Nome do Condominio", example = "Condomínio LIV", required = true)
+    @NotBlank(message = "Nome é obrigatório")
+    private String nome;
+
     @Schema(description = "Cidade do Condominio", example = "São Paulo", required = true)
     @NotBlank(message = "Cidade é obrigatório")
     private String cidade;
@@ -21,6 +25,14 @@ public class CondominioDTO {
     @Schema(description = "Número do Condominio", example = "571", required = true)
     @NotBlank(message = "Número é obrigatório")
     private String numero;
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
 
     public String getCidade() {
         return cidade;

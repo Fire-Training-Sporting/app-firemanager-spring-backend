@@ -25,7 +25,7 @@ public class CondominioService {
 
 
     public Condominio adicionarNovoCondominio(CondominioDTO dto) {
-        Condominio condominioNovo = new Condominio(dto.getCidade(), dto.getBairro(), dto.getRua(), dto.getNumero());
+        Condominio condominioNovo = new Condominio(dto.getNome(), dto.getCidade(), dto.getBairro(), dto.getRua(), dto.getNumero());
         return condominioRepository.save(condominioNovo);
     }
 
@@ -39,6 +39,7 @@ public class CondominioService {
         Condominio condominioNovo = condominioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O Condominio solicitado não existe."));
 
+        condominioNovo.setNome(dto.getNome());
         condominioNovo.setCidade(dto.getCidade());
         condominioNovo.setBairro(dto.getBairro());
         condominioNovo.setRua(dto.getRua());
