@@ -1,15 +1,15 @@
 package com.sptech.school.fira_manager_api.model;
 
-//import com.sptech.school.fira_manager_api.dto.Condominio;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.springframework.format.annotation.NumberFormat;
 
 @Entity
 @Table(name = "tb_usuarios")
 public class Usuario {
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "fk_tipo_usuario", nullable = false)
@@ -28,9 +28,9 @@ public class Usuario {
     @Column(nullable = false)
     private String senha;
 
-//    @NotBlank(message = "Condomínio é obrigatório")
-//    private Condominio condominio;
-
+    @ManyToOne
+    @JoinColumn(name = "fk_condominio")
+    private Condominio condominio;
 
     public Usuario() {
     }
@@ -46,6 +46,15 @@ public class Usuario {
         this.email = email;
         this.telefone = telefone;
         this.senha = senha;
+    }
+
+    public Usuario(Integer fkTipoUsuario, String nome, String email, String telefone, String senha, Condominio condominio) {
+        this.fkTipoUsuario = fkTipoUsuario;
+        this.nome = nome;
+        this.email = email;
+        this.telefone = telefone;
+        this.senha = senha;
+        this.condominio = condominio;
     }
 
     public Usuario(Long id, Integer fkTipoUsuario, String nome, String email, String telefone, String senha) {
@@ -105,11 +114,11 @@ public class Usuario {
         this.senha = senha;
     }
 
-//    public Condominio getCondominio() {
-//        return condominio;
-//    }
-//
-//    public void setCondominio(Condominio condominio) {
-//        this.condominio = condominio;
-//    }
+    public Condominio getCondominio() {
+        return condominio;
+    }
+
+    public void setCondominio(Condominio condominio) {
+        this.condominio = condominio;
+    }
 }

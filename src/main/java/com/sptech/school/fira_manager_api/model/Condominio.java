@@ -11,16 +11,19 @@ public class Condominio {
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Cidade é um campo obrigatório")
+    @Column(nullable = false)
+    private String nome;
+
+    @Column(nullable = false)
     private String cidade;
 
-    @NotBlank(message = "Bairro é um campo obrigatório")
+    @Column(nullable = false)
     private String bairro;
 
-    @NotBlank(message = "Rua é um campo obrigatório")
+    @Column(nullable = false)
     private String rua;
 
-    @NotBlank(message = "Número é um campo obrigatório")
+    @Column(nullable = false)
     private String numero;
 
     public Condominio() {
@@ -34,7 +37,8 @@ public class Condominio {
         this.numero = numero;
     }
 
-    public Condominio(String cidade, String bairro, String rua, String numero) {
+    public Condominio(String nome, String cidade, String bairro, String rua, String numero) {
+        this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
         this.rua = rua;
@@ -47,6 +51,14 @@ public class Condominio {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public String getCidade() {

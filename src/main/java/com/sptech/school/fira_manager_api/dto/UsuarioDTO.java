@@ -1,5 +1,6 @@
 package com.sptech.school.fira_manager_api.dto;
 
+import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.ETipoUsuario;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -30,7 +31,8 @@ public class UsuarioDTO {
     @Size(min = 6, message = "Senha deve conter no mínimo 6 caracteres")
     private String senha;
 
-//    private Condominio condominio;
+    @Schema(description = "Condomínio em que o aluno recebe aulas", example = "Condimínio LIV", required = false)
+    private Long condominio;
 
 
     public ETipoUsuario getTipoUsuario() {
@@ -71,5 +73,13 @@ public class UsuarioDTO {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public Long getCondominio() {
+        return condominio;
+    }
+
+    public void setCondominio(Long condominio) {
+        this.condominio = condominio;
     }
 }
