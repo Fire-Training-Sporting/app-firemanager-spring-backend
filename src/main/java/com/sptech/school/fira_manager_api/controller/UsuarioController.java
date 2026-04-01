@@ -84,7 +84,7 @@ public class UsuarioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Lista de usuários retornada com sucesso",
-                    content = @Content(schema = @Schema(implementation = Usuario.class))
+                    content = @Content(schema = @Schema(implementation = UsuarioDTO.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -106,7 +106,7 @@ public class UsuarioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Usuário encontrado",
-                    content = @Content(schema = @Schema(implementation = Usuario.class))
+                    content = @Content(schema = @Schema(implementation = UsuarioDTO.class))
             ),
             @ApiResponse(
                     responseCode = "400",
