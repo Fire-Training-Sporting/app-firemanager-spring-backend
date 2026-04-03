@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.controller;
 
 import com.sptech.school.fira_manager_api.dto.ServicoDTO;
+import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
 import com.sptech.school.fira_manager_api.model.Servico;
 import com.sptech.school.fira_manager_api.service.ServicoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,7 +11,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +33,7 @@ public class ServicoController {
             @ApiResponse(
                     responseCode = "201",
                     description = "Serviço criado com sucesso",
-                    content = @Content(schema = @Schema(implementation = Servico.class))
+                    content = @Content(schema = @Schema(implementation = ServicoResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -51,7 +51,7 @@ public class ServicoController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Lista de serviços retornada com sucesso",
-                    content = @Content(schema = @Schema(implementation = Servico.class))
+                    content = @Content(schema = @Schema(implementation = ServicoResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -69,7 +69,7 @@ public class ServicoController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Serviço encontrado",
-                    content = @Content(schema = @Schema(implementation = Servico.class))
+                    content = @Content(schema = @Schema(implementation = ServicoResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -92,7 +92,7 @@ public class ServicoController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Serviço atualizado com sucesso",
-                    content = @Content(schema = @Schema(implementation = Servico.class))
+                    content = @Content(schema = @Schema(implementation = ServicoResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
