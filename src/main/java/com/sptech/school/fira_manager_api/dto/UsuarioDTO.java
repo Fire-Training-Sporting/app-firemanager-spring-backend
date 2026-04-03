@@ -32,7 +32,6 @@ public class UsuarioDTO {
     @Schema(description = "Condomínio em que o aluno recebe aulas", example = "1", required = false)
     private Long condominio;
 
-
     public Long getTipoUsuario() {
         return tipoUsuario;
     }

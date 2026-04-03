@@ -1,8 +1,11 @@
 package com.sptech.school.fira_manager_api.dto.responses;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.sptech.school.fira_manager_api.dto.CondominioDTO;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.LocalDateTime;
 
 @Schema(name = "UsuarioResponse", description = "Representação de um usuário retornado pela API")
 public class UsuarioResponse {
@@ -24,6 +27,9 @@ public class UsuarioResponse {
 
     @Schema(description = "Condomínio em que o aluno recebe aulas. Null se não for aluno")
     private CondominioDTO condominio;
+
+    @Schema(description = "Data de criação do usuário", example = "03/04/2026 11:43:49")
+    private LocalDateTime criadoEm;
 
     public Long getId() {
         return id;
@@ -71,5 +77,13 @@ public class UsuarioResponse {
 
     public void setCondominio(CondominioDTO condominio) {
         this.condominio = condominio;
+    }
+
+    public LocalDateTime getCriadoEm() {
+        return criadoEm;
+    }
+
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
     }
 }

@@ -1,9 +1,13 @@
 package com.sptech.school.fira_manager_api.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.format.annotation.NumberFormat;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tb_usuarios")
@@ -34,6 +38,11 @@ public class Usuario {
     @ManyToOne
     @JoinColumn(name = "fk_condominio")
     private Condominio condominio;
+
+    @CreationTimestamp
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private LocalDateTime criadoEm;
 
     public Usuario() {
     }
@@ -123,5 +132,9 @@ public class Usuario {
 
     public void setCondominio(Condominio condominio) {
         this.condominio = condominio;
+    }
+
+    public LocalDateTime getCriadoEm() {
+        return criadoEm;
     }
 }
