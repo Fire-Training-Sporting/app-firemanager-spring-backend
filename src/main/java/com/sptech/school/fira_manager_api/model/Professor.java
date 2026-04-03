@@ -1,25 +1,39 @@
 package com.sptech.school.fira_manager_api.model;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+
+@Entity
+@Table(name = "tb_professores")
 public class Professor {
 
-    private int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotNull(message = "Nome é obrigatório")
+    @Column(nullable = false)
     private String nome;
+
+    @NotNull(message = "Função é obrigatória")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private EFuncaoProfessor funcao;
 
     public Professor() {
     }
 
-    public Professor(int id, String nome, EFuncaoProfessor funcao) {
+    public Professor(Long id, String nome, EFuncaoProfessor funcao) {
         this.id = id;
         this.nome = nome;
         this.funcao = funcao;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -8,18 +9,26 @@ import java.time.LocalDateTime;
 public class AgendamentoDTO {
 
     @Schema(description = "ID do aluno", example = "1")
+    @NotNull
     private Long alunoId;
 
     @Schema(description = "ID do professor", example = "2")
+    @NotNull
     private Long professorId;
 
-    @Schema(description = "ID do local", example = "3")
-    private Long localId;
+    @Schema(description = "ID do auxiliar (opcional)", example = "3", nullable = true)
+    private Long auxiliarId;
 
-    @Schema(description = "ID do serviço", example = "4")
+    @Schema(description = "ID do condomínio", example = "4")
+    @NotNull
+    private Long condominioId;
+
+    @Schema(description = "ID do serviço", example = "5")
+    @NotNull
     private Long servicoId;
 
     @Schema(description = "Data e hora do agendamento", example = "2026-04-10T14:30:00")
+    @NotNull
     private LocalDateTime data;
 
     @Schema(description = "Observações adicionais", example = "Aluno prefere atendimento rápido")
@@ -28,12 +37,11 @@ public class AgendamentoDTO {
     public AgendamentoDTO() {
     }
 
-    public AgendamentoDTO(Long alunoId, Long professorId,
-                          Long localId, Long servicoId,
-                          LocalDateTime data, String observacao) {
+    public AgendamentoDTO(Long alunoId, Long professorId, Long auxiliarId, Long condominioId, Long servicoId, LocalDateTime data, String observacao) {
         this.alunoId = alunoId;
         this.professorId = professorId;
-        this.localId = localId;
+        this.auxiliarId = auxiliarId;
+        this.condominioId = condominioId;
         this.servicoId = servicoId;
         this.data = data;
         this.observacao = observacao;
@@ -55,12 +63,20 @@ public class AgendamentoDTO {
         this.professorId = professorId;
     }
 
-    public Long getLocalId() {
-        return localId;
+    public Long getAuxiliarId() {
+        return auxiliarId;
     }
 
-    public void setLocalId(Long localId) {
-        this.localId = localId;
+    public void setAuxiliarId(Long auxiliarId) {
+        this.auxiliarId = auxiliarId;
+    }
+
+    public Long getCondominioId() {
+        return condominioId;
+    }
+
+    public void setCondominioId(Long condominioId) {
+        this.condominioId = condominioId;
     }
 
     public Long getServicoId() {

@@ -7,79 +7,90 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "agendamento")
+@Table(name = "tb_agendamentos")
 public class Agendamento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long agendamentoId;
+    private Long id;
 
     @NotNull(message = "Aluno é obrigatório")
-    private Long alunoId;
+    @ManyToOne
+    @JoinColumn(name = "fk_aluno", nullable = false)
+    private Usuario aluno;
 
     @NotNull(message = "Professor é obrigatório")
-    private Long professorId;
+    @ManyToOne
+    @JoinColumn(name = "fk_professor", nullable = false)
+    private Usuario professor;
 
-    @NotNull(message = "Local é obrigatório")
-    private Long localId;
+    @ManyToOne
+    @JoinColumn(name = "fk_auxiliar")
+    private Usuario auxiliar;
+
+    @NotNull(message = "Condomínio é obrigatório")
+    @ManyToOne
+    @JoinColumn(name = "fk_condominio", nullable = false)
+    private Condominio condominio;
 
     @NotNull(message = "Serviço é obrigatório")
-    private Long servicoId;
+    @ManyToOne
+    @JoinColumn(name = "fk_servico", nullable = false)
+    private Servico servico;
 
     @NotNull(message = "Data não pode estar nula")
+    @Column(name = "data_agendamento", nullable = false)
     private LocalDateTime data;
 
     @Size(max = 500, message = "Observação deve ter no máximo 500 caracteres")
+    @Column(length = 500)
     private String observacao;
 
     public Agendamento() {
     }
 
-    public Agendamento(Long alunoId, Long professorId,
-                       Long localId, Long servicoId,
-                       LocalDateTime data, String observacao) {
-        this.alunoId = alunoId;
-        this.professorId = professorId;
-        this.localId = localId;
-        this.servicoId = servicoId;
-        this.data = data;
-        this.observacao = observacao;
+    public Long getId() {
+        return id;
     }
 
-    public Long getAgendamentoId() {
-        return agendamentoId;
+    public Usuario getAluno() {
+        return aluno;
     }
 
-    public Long getAlunoId() {
-        return alunoId;
+    public void setAluno(Usuario aluno) {
+        this.aluno = aluno;
     }
 
-    public void setAlunoId(Long alunoId) {
-        this.alunoId = alunoId;
+    public Usuario getProfessor() {
+        return professor;
     }
 
-    public Long getProfessorId() {
-        return professorId;
+    public void setProfessor(Usuario professor) {
+        this.professor = professor;
     }
 
-    public void setProfessorId(Long professorId) {
-        this.professorId = professorId;
+    public Usuario getAuxiliar() {
+        return auxiliar;
     }
 
-    public Long getLocalId() {
-        return localId;
+    public void setAuxiliar(Usuario auxiliar) {
+        this.auxiliar = auxiliar;
     }
 
-    public void setLocalId(Long localId) {
-        this.localId = localId;
+    public Condominio getCondominio() {
+        return condominio;
     }
 
-    public Long getServicoId() {
-        return servicoId;
+    public void setCondominio(Condominio condominio) {
+        this.condominio = condominio;
     }
 
-    public void setServicoId(Long servicoId) {
-        this.servicoId = servicoId;
+    public Servico getServico() {
+        return servico;
+    }
+
+    public void setServico(Servico servico) {
+        this.servico = servico;
     }
 
     public LocalDateTime getData() {
