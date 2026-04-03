@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.NumberFormat;
 
 @Entity
@@ -12,8 +13,10 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "fk_tipo_usuario", nullable = false)
-    private Integer fkTipoUsuario;
+    @ManyToOne
+    @JoinColumn(name = "fk_tipo_usuario", nullable = false)
+    @NotNull(message = "Tipo de usuário é obrigatório")
+    private TipoUsuario tipoUsuario;
 
     @Column(nullable = false)
     private String nome;
@@ -40,16 +43,16 @@ public class Usuario {
         this.senha = senha;
     }
 
-    public Usuario(Integer fkTipoUsuario, String nome, String email, String telefone, String senha) {
-        this.fkTipoUsuario = fkTipoUsuario;
+    public Usuario(TipoUsuario tipoUsuario, String nome, String email, String telefone, String senha) {
+        this.tipoUsuario = tipoUsuario;
         this.nome = nome;
         this.email = email;
         this.telefone = telefone;
         this.senha = senha;
     }
 
-    public Usuario(Integer fkTipoUsuario, String nome, String email, String telefone, String senha, Condominio condominio) {
-        this.fkTipoUsuario = fkTipoUsuario;
+    public Usuario(TipoUsuario tipoUsuario, String nome, String email, String telefone, String senha, Condominio condominio) {
+        this.tipoUsuario = tipoUsuario;
         this.nome = nome;
         this.email = email;
         this.telefone = telefone;
@@ -57,9 +60,9 @@ public class Usuario {
         this.condominio = condominio;
     }
 
-    public Usuario(Long id, Integer fkTipoUsuario, String nome, String email, String telefone, String senha) {
+    public Usuario(Long id, TipoUsuario tipoUsuario, String nome, String email, String telefone, String senha) {
         this.id = id;
-        this.fkTipoUsuario = fkTipoUsuario;
+        this.tipoUsuario = tipoUsuario;
         this.nome = nome;
         this.email = email;
         this.telefone = telefone;
@@ -74,12 +77,12 @@ public class Usuario {
         this.id = id;
     }
 
-    public Integer getFkTipoUsuario() {
-        return fkTipoUsuario;
+    public TipoUsuario getTipoUsuario() {
+        return tipoUsuario;
     }
 
-    public void setFkTipoUsuario(Integer fkTipoUsuario) {
-        this.fkTipoUsuario = fkTipoUsuario;
+    public void setTipoUsuario(TipoUsuario tipoUsuario) {
+        this.tipoUsuario = tipoUsuario;
     }
 
     public String getNome() {

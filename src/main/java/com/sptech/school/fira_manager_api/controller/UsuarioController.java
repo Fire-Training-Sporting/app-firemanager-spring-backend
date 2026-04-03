@@ -170,5 +170,4 @@ public class UsuarioController {
         usuarioService.deletarUsuarioPorId(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
-
 }
