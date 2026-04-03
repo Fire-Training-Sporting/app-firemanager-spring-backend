@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.controller;
 
 import com.sptech.school.fira_manager_api.dto.LoginDTO;
 import com.sptech.school.fira_manager_api.dto.UsuarioDTO;
+import com.sptech.school.fira_manager_api.dto.responses.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Usuario;
 import com.sptech.school.fira_manager_api.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +34,7 @@ public class UsuarioController {
             @ApiResponse(
                     responseCode = "201",
                     description = "Usuário criado com sucesso",
-                    content = @Content(schema = @Schema(implementation = UsuarioDTO.class))
+                    content = @Content(schema = @Schema(implementation = UsuarioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -56,7 +57,7 @@ public class UsuarioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Login bem-sucedido",
-                    content = @Content(schema = @Schema(implementation = UsuarioDTO.class))
+                    content = @Content(schema = @Schema(implementation = UsuarioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -84,7 +85,7 @@ public class UsuarioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Lista de usuários retornada com sucesso",
-                    content = @Content(schema = @Schema(implementation = UsuarioDTO.class))
+                    content = @Content(schema = @Schema(implementation = UsuarioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -106,7 +107,7 @@ public class UsuarioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Usuário encontrado",
-                    content = @Content(schema = @Schema(implementation = UsuarioDTO.class))
+                    content = @Content(schema = @Schema(implementation = UsuarioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -129,7 +130,7 @@ public class UsuarioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Usuário atualizado com sucesso",
-                    content = @Content(schema = @Schema(implementation = UsuarioDTO.class))
+                    content = @Content(schema = @Schema(implementation = UsuarioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
