@@ -94,14 +94,6 @@ public class UsuarioService {
     }
 
     public Usuario atualizarUsuarioPorId(Long id, UsuarioDTO dto) {
-        if (usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email já cadastrado");
-        }
-
-        if (usuarioRepository.existsByTelefone(dto.getTelefone())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Telefone já cadastrado");
-        }
-
         Usuario usuarioNovo = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
 
