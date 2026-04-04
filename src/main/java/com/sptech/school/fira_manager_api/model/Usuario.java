@@ -2,13 +2,22 @@ package com.sptech.school.fira_manager_api.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.format.annotation.NumberFormat;
 
 import java.time.LocalDateTime;
 
+@JsonPropertyOrder({
+        "id",
+        "nome",
+        "email",
+        "telefone",
+        "tipoUsuario",
+        "condominio",
+        "criadoEm"
+})
 @Entity
 @Table(name = "tb_usuarios")
 public class Usuario {

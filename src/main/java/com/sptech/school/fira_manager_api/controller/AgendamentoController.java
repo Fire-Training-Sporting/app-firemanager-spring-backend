@@ -1,7 +1,12 @@
 package com.sptech.school.fira_manager_api.controller;
-
-import com.sptech.school.fira_manager_api.dto.Agendamento;
+import com.sptech.school.fira_manager_api.dto.AgendamentoAtualizarDTO;
+import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
+import com.sptech.school.fira_manager_api.dto.AgendamentoStatusDTO;
+import com.sptech.school.fira_manager_api.dto.responses.AgendamentoResponse;
 import com.sptech.school.fira_manager_api.service.AgendamentoService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,46 +14,50 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/agendamentos")
+@Tag(name = "Agendamentos", description = "Gerenciamento de agendamentos dos alunos")
 public class AgendamentoController {
 
-    private final AgendamentoService service;
+    private final AgendamentoService agendamentoService;
 
-    public AgendamentoController(AgendamentoService service) {
-        this.service = service;
+    public AgendamentoController(AgendamentoService agendamentoService) {
+        this.agendamentoService = agendamentoService;
     }
 
     @PostMapping
-    public ResponseEntity<String> criar(@RequestBody Agendamento agendamento) {
-
-        if (service.criarNovoAgendamento(agendamento) == null) {
-            return ResponseEntity.status(201).body("Agendamento criado!");
-        }
-
-        return ResponseEntity.badRequest().body("Erro ao criar agendamento");
+    public ResponseEntity<AgendamentoResponse> criarAgendamento(@Valid @RequestBody AgendamentoDTO dto){
+        return ResponseEntity.status(HttpStatus.CREATED).body(agendamentoService.criarAgendamento(dto));
     }
 
     @GetMapping
-    public ResponseEntity<List<Agendamento>> listar() {
-        return ResponseEntity.ok(service.obterAgendamentos());
+    public ResponseEntity<List<AgendamentoResponse>> listarAgendamentos(){
+        return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.listarAgendamento());
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> atualizar(@PathVariable Integer id, @RequestBody Agendamento agendamento) {
+    @GetMapping("/{id}")
+    public ResponseEntity<AgendamentoResponse> listarAgendamentosPorId(@PathVariable Long id){
+        return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.listarAgendamentoPorId(id));
+    }
 
-        if (service.atualizarAgendamento(id, agendamento)) {
-            return ResponseEntity.ok("Atualizado com sucesso");
-        }
+    @PatchMapping("/{id}")
+    public ResponseEntity<AgendamentoResponse> atualizarAgendamentoPorId(@Valid @RequestBody AgendamentoAtualizarDTO dto, @PathVariable Long id){
+        return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.atualizarAgendamentoPorId(dto, id));
+    }
 
-        return ResponseEntity.status(404).body("Agendamento não encontrado");
+    @PatchMapping("/status/{id}")
+    public ResponseEntity<AgendamentoResponse> atualizarStatusAgendamentoPorId(@PathVariable Long id, @Valid @RequestBody AgendamentoStatusDTO dto){
+        return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.atualizarStatusAgendamentoPorId(id, dto));
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<List<AgendamentoResponse>> buscarAgendamentoPorStatus(@RequestParam String status){
+        return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.buscarAgendamentoPorStatus(status));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> cancelar(@PathVariable Integer id) {
-
-        if (service.cancelarAgendamento(id)) {
-            return ResponseEntity.ok("Cancelado com sucesso");
-        }
-
-        return ResponseEntity.status(404).body("Agendamento não encontrado");
+    public ResponseEntity<Void> deletarAgendamentoPorId(@PathVariable Long id){
+        agendamentoService.deletarAgendamentoPorId(id);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+
 }
