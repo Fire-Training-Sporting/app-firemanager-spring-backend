@@ -10,6 +10,11 @@ public class ServicoResponse {
     @Schema(description = "Nome do serviço", example = "Tênis")
     private String nome;
 
+    public ServicoResponse(Long id, String nome) {
+        this.id = id;
+        this.nome = nome;
+    }
+
     public Long getId() {
         return id;
     }

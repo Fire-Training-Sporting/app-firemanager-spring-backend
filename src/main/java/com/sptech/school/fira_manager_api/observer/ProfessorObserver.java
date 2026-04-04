@@ -1,9 +1,8 @@
 package com.sptech.school.fira_manager_api.observer;
 
-import com.sptech.school.fira_manager_api.dto.Agendamento;
 import com.sptech.school.fira_manager_api.service.EmailService;
 
-public class ProfessorObserver implements Observer {
+/*public class ProfessorObserver implements Observer {
 
     private final Long id;
     private final EmailService emailService;
@@ -28,3 +27,5 @@ public class ProfessorObserver implements Observer {
         }
     }
 }
+
+*/
