@@ -1,97 +1,100 @@
 package com.sptech.school.fira_manager_api.service;
 
+import com.sptech.school.fira_manager_api.dto.SaldoDTO;
+import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
 import com.sptech.school.fira_manager_api.model.Saldo;
-import com.sptech.school.fira_manager_api.dto.ServicoDTO;
+import com.sptech.school.fira_manager_api.model.Servico;
+import com.sptech.school.fira_manager_api.model.Usuario;
+import com.sptech.school.fira_manager_api.repository.SaldoRepository;
+import com.sptech.school.fira_manager_api.repository.ServicoRepository;
+import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class SaldoService {
 
-    private final List<Saldo> saldos = new ArrayList<>();
+    private final SaldoRepository saldoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final ServicoRepository servicoRepository;
 
-    public List<Saldo> listar() {
-        return saldos;
+    public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository) {
+        this.saldoRepository = saldoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.servicoRepository = servicoRepository;
     }
 
-    public Saldo buscarPorAlunoId(Long alunoId) {
-        for (Saldo saldo : saldos) {
-            if (saldo.getAlunoID().equals(alunoId)) {
-                return saldo;
-            }
+    private SaldoResponse toSaldoResponse(Saldo saldo) {
+        if (saldo == null) {
+            return null;
         }
-        return null;
+
+        return new SaldoResponse(
+                saldo.getId(),
+                saldo.getAluno(),
+                saldo.getQuantidade(),
+                saldo.getServico()
+        );
     }
 
-    public Saldo adicionarSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
-        if (alunoId == null || valor == null || valor <= 0) {
-            return null;
-        }
+    public SaldoResponse criarSaldo(SaldoDTO dto) {
+        Saldo saldoNovo = new Saldo();
 
-        Saldo saldoExistente = buscarPorAlunoId(alunoId);
+        Usuario saldoUsuario = usuarioRepository.findById(dto.getAluno())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        saldoNovo.setAluno(saldoUsuario);
 
-        if (saldoExistente == null) {
-            Saldo novoSaldo = new Saldo(alunoId, valor, servico);
-            saldos.add(novoSaldo);
-            return novoSaldo;
-        }
+        Servico servicoSaldo = servicoRepository.findById(dto.getServico())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
+        saldoNovo.setServico(servicoSaldo);
 
-        int novoValor = saldoExistente.getQuanidade() + valor;
-        saldoExistente.setQuanidade(novoValor);
+        saldoNovo.setQuantidade(dto.getQuantidade());
 
-        if (servico != null) {
-            saldoExistente.setServico(servico);
-        }
+        saldoNovo = saldoRepository.save(saldoNovo);
 
-        return saldoExistente;
+        return toSaldoResponse(saldoNovo);
     }
 
-    public Saldo atualizarSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
-        if (alunoId == null || valor == null || valor < 0) {
-            return null;
-        }
-
-        Saldo saldoExistente = buscarPorAlunoId(alunoId);
-
-        if (saldoExistente == null) {
-            return null;
-        }
-
-        saldoExistente.setQuanidade(valor);
-
-        if (servico != null) {
-            saldoExistente.setServico(servico);
-        }
-
-        return saldoExistente;
+    public List<SaldoResponse> listarSaldos() {
+        return saldoRepository.findAll()
+                .stream()
+                .map(this::toSaldoResponse)
+                .toList();
     }
 
-    public Saldo removerSaldo(Long alunoId, Integer valor, ServicoDTO servico) {
-        if (alunoId == null || valor == null || valor <= 0) {
-            return null;
+    public SaldoResponse listarSaldoPorId(Long id) {
+        Saldo saldo = saldoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
+
+        return toSaldoResponse(saldo);
+    }
+
+    public SaldoResponse atualizarSaldoPorId(SaldoDTO dto, Long id) {
+        Saldo saldoNovo = saldoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
+
+        Usuario saldoUsuario = usuarioRepository.findById(dto.getAluno())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        saldoNovo.setAluno(saldoUsuario);
+
+        Servico servicoSaldo = servicoRepository.findById(dto.getServico())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
+        saldoNovo.setServico(servicoSaldo);
+
+        saldoNovo.setQuantidade(dto.getQuantidade());
+
+        saldoNovo = saldoRepository.save(saldoNovo);
+
+        return toSaldoResponse(saldoNovo);
+    }
+
+    public void deletarSaldoPorId(Long id) {
+        if (!saldoRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não existe!");
         }
-
-        Saldo saldoExistente = buscarPorAlunoId(alunoId);
-
-        if (saldoExistente == null) {
-            return null;
-        }
-
-        int saldoAtual = saldoExistente.getQuanidade();
-        int novoSaldo = saldoAtual - valor;
-
-        if (novoSaldo < 0) {
-            return null;
-        }
-
-        saldoExistente.setQuanidade(novoSaldo);
-
-        if (servico != null) {
-            saldoExistente.setServico(servico);
-        }
-
-        return saldoExistente;
+        saldoRepository.deleteById(id);
     }
 }
