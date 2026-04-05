@@ -1,47 +1,69 @@
 package com.sptech.school.fira_manager_api.model;
 
 import com.sptech.school.fira_manager_api.dto.ServicoDTO;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
+@Entity
 public class Saldo {
 
-    private Long alunoID;
-    private Integer quanidade;
-    private ServicoDTO servico;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "fk_servico", nullable = false)
+    private Servico servico;
+
+
+    @ManyToOne
+    @JoinColumn(name = "fk_usuario", nullable = false)
+    private Usuario aluno;
+
+    @NotNull
+    @Column(name = "quantidade",  nullable = false)
+    private Integer quantidade;
 
     public Saldo() {
     }
 
-    public Saldo(Long alunoID, Integer quanidade, ServicoDTO servico) {
-        this.alunoID = alunoID;
-        this.quanidade = quanidade;
+    public Saldo(Long id, Servico servico, Usuario aluno, Integer quantidade) {
+        this.id = id;
         this.servico = servico;
+        this.aluno = aluno;
+        this.quantidade = quantidade;
     }
 
-    public int getQuanidade() {
-        return quanidade;
+    public Long getId() {
+        return id;
     }
 
-    public void setQuanidade(int quanidade) {
-        this.quanidade = quanidade;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public ServicoDTO getServico() {
+    public Servico getServico() {
         return servico;
     }
 
-    public void setServico(ServicoDTO servico) {
+    public void setServico(Servico servico) {
         this.servico = servico;
     }
 
-    public Long getAlunoID() {
-        return alunoID;
+    public Usuario getAluno() {
+        return aluno;
     }
 
-    public void setAlunoID(Long alunoID) {
-        this.alunoID = alunoID;
+    public Integer getQuantidade() {
+        return quantidade;
     }
 
-    public void setQuanidade(Integer quanidade) {
-        this.quanidade = quanidade;
+    public void setQuantidade(Integer quantidade) {
+        this.quantidade = quantidade;
+    }
+
+    public void setAluno(Usuario aluno) {
+        this.aluno = aluno;
     }
 }
