@@ -18,12 +18,12 @@ import java.util.Date;
         "aluno",
         "professor",
         "auxiliar",
+        "status",
         "servico",
+        "Saldo",
         "data",
         "horaInicio",
-        "observacao",
-        "status",
-        "Saldo"
+        "observacao"
 })
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

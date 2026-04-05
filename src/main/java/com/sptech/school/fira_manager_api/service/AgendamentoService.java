@@ -3,19 +3,17 @@ package com.sptech.school.fira_manager_api.service;
 import com.sptech.school.fira_manager_api.dto.AgendamentoAtualizarDTO;
 import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
 import com.sptech.school.fira_manager_api.dto.AgendamentoStatusDTO;
-import com.sptech.school.fira_manager_api.dto.SaldoDTO;
 import com.sptech.school.fira_manager_api.dto.responses.*;
 import com.sptech.school.fira_manager_api.model.*;
+import com.sptech.school.fira_manager_api.observer.AgendamentoSubject;
+import com.sptech.school.fira_manager_api.observer.AlunoObserver;
+import com.sptech.school.fira_manager_api.observer.ProfessorObserver;
 import com.sptech.school.fira_manager_api.repository.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -27,16 +25,15 @@ public class AgendamentoService {
     private final CondominioRepository condominioRepository;
     private final ServicoRepository servicoRepository;
     private final SaldoRepository saldoRepository;
+    private final EmailService emailService;
 
-    public AgendamentoService(AgendamentoRepository agendamentoRepository,
-                              UsuarioRepository usuarioRepository,
-                              CondominioRepository condominioRepository,
-                              ServicoRepository servicoRepository, SaldoRepository saldoRepository) {
+    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, EmailService emailService) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.condominioRepository = condominioRepository;
         this.servicoRepository = servicoRepository;
         this.saldoRepository = saldoRepository;
+        this.emailService = emailService;
     }
 
     private ProfessorResponse toProfessorResponse(Usuario usuario) {
@@ -63,8 +60,8 @@ public class AgendamentoService {
         );
     }
 
-    private SaldoResponse toSaldoResponse(Saldo saldo){
-        if (saldo == null){
+    private SaldoResponse toSaldoResponse(Saldo saldo) {
+        if (saldo == null) {
             return null;
         }
 
@@ -96,6 +93,7 @@ public class AgendamentoService {
                 condominio.getNumero()
         );
     }
+
     private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento) {
         Saldo saldo = saldoRepository
                 .findByAlunoIdAndServicoId(agendamento.getAluno().getId(), agendamento.getServico().getId())
@@ -147,44 +145,60 @@ public class AgendamentoService {
         );
     }
 
+    private Usuario buscarUsuario(Long id, String tipo) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, tipo + " não encontrado"));
+    }
+
+    private Servico buscarServico(Long id) {
+        return servicoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
+    }
+
+    private Condominio buscarCondominio(Long id) {
+        return condominioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Condominio não encontrado"));
+    }
+
+    private Saldo buscarSaldo(Long alunoId, Long servicoId) {
+        return saldoRepository.findByAlunoIdAndServicoId(alunoId, servicoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
+    }
+
+    private void notificar(Agendamento agendamento) {
+        AgendamentoSubject subject = new AgendamentoSubject();
+
+        subject.addObserver(new AlunoObserver(agendamento.getAluno().getId(), emailService));
+
+        subject.addObserver(new ProfessorObserver(agendamento.getProfessor().getId(), emailService));
+
+        subject.notifyObservers(agendamento);
+    }
+
     public AgendamentoResponse criarAgendamento(AgendamentoDTO dto) {
 
         Agendamento agendamentoNovo = new Agendamento();
 
-        Saldo saldo = saldoRepository
-                .findByAlunoIdAndServicoId(dto.getAluno(), dto.getServico())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Saldo não encontrado"
-                ));
+        Saldo saldo = saldoRepository.findByAlunoIdAndServicoId(dto.getAluno(), dto.getServico())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
 
         if (saldo.getQuantidade() <= 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Saldo insuficiente"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
         }
 
-        Usuario usuarioAluno = usuarioRepository.findById(dto.getAluno())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        Usuario usuarioAluno = buscarUsuario(dto.getAluno(), "Aluno");
         agendamentoNovo.setAluno(usuarioAluno);
 
-        Usuario usuarioProfessor = usuarioRepository.findById(dto.getProfessor())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado"));
+        Usuario usuarioProfessor = buscarUsuario(dto.getProfessor(), "Professor");
         agendamentoNovo.setProfessor(usuarioProfessor);
 
-        if (dto.getAuxiliar() != null) {
-            Usuario usuarioAuxiliar = usuarioRepository.findById(dto.getAuxiliar())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Auxiliar não encontrado"));
-            agendamentoNovo.setAuxiliar(usuarioAuxiliar);
-        } else {
-            agendamentoNovo.setAuxiliar(null);
-        }
+        Usuario usuarioAuxiliar = dto.getAuxiliar() != null ? buscarUsuario(dto.getAuxiliar(), "Auxiliar") : null;
+        agendamentoNovo.setAuxiliar(usuarioAuxiliar);
 
-        Servico servico = servicoRepository.findById(dto.getServico())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
+        Servico servico = buscarServico(dto.getServico());
         agendamentoNovo.setServico(servico);
 
-        Condominio condominio = condominioRepository.findById(dto.getCondominio())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Condominio não encontrado"));
+        Condominio condominio = buscarCondominio(dto.getCondominio());
         agendamentoNovo.setCondominio(condominio);
 
         agendamentoNovo.setData(dto.getData());
@@ -196,6 +210,8 @@ public class AgendamentoService {
         saldoRepository.save(saldo);
         agendamentoNovo = agendamentoRepository.save(agendamentoNovo);
 
+        notificar(agendamentoNovo);
+
         return toAgendamentoResponse(agendamentoNovo, saldo);
     }
 
@@ -206,7 +222,7 @@ public class AgendamentoService {
                 .toList();
     }
 
-    public AgendamentoResponse listarAgendamentoPorId(Long id){
+    public AgendamentoResponse listarAgendamentoPorId(Long id) {
         Agendamento agendamento = agendamentoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Agendamento não encontrado"));
 
@@ -227,25 +243,17 @@ public class AgendamentoService {
 
         Servico servicoAntigo = agendamentoNovo.getServico();
 
-        Servico servicoNovo = servicoRepository.findById(dto.getServico())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
+        Servico servicoNovo = buscarServico(dto.getServico());
 
         Saldo saldo = null;
 
         if (!servicoAntigo.getId().equals(servicoNovo.getId())) {
 
-            Saldo saldoAntigo = saldoRepository
-                    .findByAlunoIdAndServicoId(dto.getAluno(), servicoAntigo.getId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo antigo não encontrado"));
-
-            Saldo saldoNovo = saldoRepository
-                    .findByAlunoIdAndServicoId(dto.getAluno(), servicoNovo.getId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo novo não encontrado"));
+            Saldo saldoAntigo = buscarSaldo(dto.getAluno(), servicoAntigo.getId());
+            Saldo saldoNovo = buscarSaldo(dto.getAluno(), servicoNovo.getId());
 
             if (saldoNovo.getQuantidade() <= 0) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Saldo insuficiente para o novo serviço"
-                );
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente para o novo serviço");
             }
 
             saldoAntigo.setQuantidade(saldoAntigo.getQuantidade() + 1);
@@ -257,24 +265,16 @@ public class AgendamentoService {
             saldo = saldoNovo;
         }
 
-        Usuario usuarioAluno = usuarioRepository.findById(dto.getAluno())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        Usuario usuarioAluno = buscarUsuario(dto.getAluno(), "Aluno");
         agendamentoNovo.setAluno(usuarioAluno);
 
-        Usuario usuarioProfessor = usuarioRepository.findById(dto.getProfessor())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado"));
+        Usuario usuarioProfessor = buscarUsuario(dto.getProfessor(), "Professor");
         agendamentoNovo.setProfessor(usuarioProfessor);
 
-        if (dto.getAuxiliar() == null) {
-            agendamentoNovo.setAuxiliar(null);
-        } else {
-            Usuario usuarioAuxiliar = usuarioRepository.findById(dto.getAuxiliar())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Auxiliar não encontrado"));
-            agendamentoNovo.setAuxiliar(usuarioAuxiliar);
-        }
+        Usuario usuarioAuxiliar = dto.getAuxiliar() != null ? buscarUsuario(dto.getAuxiliar(), "Auxiliar") : null;
+        agendamentoNovo.setAuxiliar(usuarioAuxiliar);
 
-        Condominio condominio = condominioRepository.findById(dto.getCondominio())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Condominio não encontrado"));
+        Condominio condominio = buscarCondominio(dto.getCondominio());
         agendamentoNovo.setCondominio(condominio);
 
         agendamentoNovo.setServico(servicoNovo);
@@ -290,17 +290,10 @@ public class AgendamentoService {
     public AgendamentoResponse atualizarStatusAgendamentoPorId(Long id, AgendamentoStatusDTO dto) {
 
         Agendamento agendamento = agendamentoRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Agendamento não encontrado"
-                ));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Agendamento não encontrado"));
 
 
-        Saldo saldo = saldoRepository.findByAlunoIdAndServicoId(
-                agendamento.getAluno().getId(),
-                agendamento.getServico().getId()
-        ).orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND, "Saldo não encontrado"
-        ));
+        Saldo saldo = buscarSaldo(agendamento.getAluno().getId(), agendamento.getServico().getId());
 
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status não pode ser vazio");
@@ -317,14 +310,15 @@ public class AgendamentoService {
             saldoRepository.save(saldo);
         }
 
-
         agendamento.setStatus(dto.getStatus());
         agendamento.setAtualizadoEm(LocalDateTime.now());
+
         agendamento = agendamentoRepository.save(agendamento);
+
+        notificar(agendamento);
+
         return toAgendamentoResponse(agendamento);
     }
-
-
 
     public List<AgendamentoResponse> buscarAgendamentoPorStatus(String status) {
         return agendamentoRepository.findAllByStatus(status)
@@ -340,18 +334,11 @@ public class AgendamentoService {
                         HttpStatus.NOT_FOUND, "O agendamento não existe!"
                 ));
 
-        Saldo saldo = saldoRepository.findByAlunoIdAndServicoId(agendamento.getAluno().getId(),
-                        agendamento.getServico().getId()
-                )
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Saldo não encontrado"
-                ));
+        Saldo saldo = buscarSaldo(agendamento.getAluno().getId(), agendamento.getServico().getId());
 
         saldo.setQuantidade(saldo.getQuantidade() + 1);
         saldoRepository.save(saldo);
 
         agendamentoRepository.deleteById(id);
     }
-
-
 }

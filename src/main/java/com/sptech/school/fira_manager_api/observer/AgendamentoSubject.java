@@ -1,6 +1,5 @@
 package com.sptech.school.fira_manager_api.observer;
 
-import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
 import com.sptech.school.fira_manager_api.model.Agendamento;
 
 import java.util.ArrayList;
@@ -20,6 +19,11 @@ public class AgendamentoSubject {
     // Aqui é o metodo para remover da lista
     public void removeObserver(Observer observer) {
         observers.remove(observer);
+    }
+
+    // Aqui é o metodo para limpar a lista
+    public void clearObservers() {
+        observers.clear();
     }
 
     // Este é um metodo de notificar todas as instancias na lista,
