@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.dto.responses;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Usuario;
 
 import java.time.LocalDate;
@@ -20,12 +21,14 @@ import java.util.Date;
         "observacao",
         "criadoEm",
         "atualizadoEm",
-        "status"
+        "status",
+        "Saldo"
 })
 public class AgendamentoResponse {
 
     private Long id;
     private Usuario aluno;
+    private SaldoResponse saldo;
     private ProfessorResponse professor;
     private ProfessorResponse auxiliar;
     private ServicoResponse servico;
@@ -41,9 +44,10 @@ public class AgendamentoResponse {
     public AgendamentoResponse() {
     }
 
-    public AgendamentoResponse(Long id, Usuario aluno, ProfessorResponse professor, ProfessorResponse auxiliar, ServicoResponse servico, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
+    public AgendamentoResponse(Long id, Usuario aluno,SaldoResponse saldo, ProfessorResponse professor, ProfessorResponse auxiliar, ServicoResponse servico, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
         this.id = id;
         this.aluno = aluno;
+        this.saldo = saldo;
         this.professor = professor;
         this.auxiliar = auxiliar;
         this.servico = servico;
@@ -55,9 +59,10 @@ public class AgendamentoResponse {
         this.status = status;
     }
 
-    public AgendamentoResponse(Long id, Usuario aluno, ProfessorResponse professor, ServicoResponse servico, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
+    public AgendamentoResponse(Long id, Usuario aluno,SaldoResponse saldo, ProfessorResponse professor, ServicoResponse servico, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
         this.id = id;
         this.aluno = aluno;
+        this.saldo = saldo;
         this.professor = professor;
         this.servico = servico;
         this.data = data;
@@ -154,5 +159,13 @@ public class AgendamentoResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public SaldoResponse getSaldo() {
+        return saldo;
+    }
+
+    public void setSaldo(SaldoResponse saldo) {
+        this.saldo = saldo;
     }
 }

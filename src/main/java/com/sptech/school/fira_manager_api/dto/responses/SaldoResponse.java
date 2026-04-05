@@ -23,7 +23,6 @@ public class SaldoResponse {
     }
 
 
-
     public Integer getQuantidade() {
         return quantidade;
     }

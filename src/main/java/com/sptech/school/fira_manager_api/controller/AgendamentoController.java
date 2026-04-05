@@ -2,7 +2,9 @@ package com.sptech.school.fira_manager_api.controller;
 import com.sptech.school.fira_manager_api.dto.AgendamentoAtualizarDTO;
 import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
 import com.sptech.school.fira_manager_api.dto.AgendamentoStatusDTO;
+import com.sptech.school.fira_manager_api.dto.SaldoDTO;
 import com.sptech.school.fira_manager_api.dto.responses.AgendamentoResponse;
+import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.service.AgendamentoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -156,8 +158,10 @@ public class AgendamentoController {
                     content = @Content
             )
     })
-    @GetMapping("/status")
-    public ResponseEntity<List<AgendamentoResponse>> buscarAgendamentoPorStatus(@RequestParam String status){
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<AgendamentoResponse>> buscarAgendamentoPorStatus(@PathVariable String status){
+
+        System.out.println("Status recebido: " + status);
         return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.buscarAgendamentoPorStatus(status));
     }
 
