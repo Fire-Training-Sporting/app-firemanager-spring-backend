@@ -31,7 +31,7 @@ public class Usuario {
     @NotNull(message = "Tipo de usuário é obrigatório")
     private TipoUsuario tipoUsuario;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nome;
 
     @Column(nullable = false, unique = true)
