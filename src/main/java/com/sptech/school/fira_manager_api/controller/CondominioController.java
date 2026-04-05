@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.controller;
 
 import com.sptech.school.fira_manager_api.dto.CondominioDTO;
+import com.sptech.school.fira_manager_api.dto.responses.CondominioResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.service.CondominioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +34,7 @@ public class CondominioController {
             @ApiResponse(
                     responseCode = "201",
                     description = "Condominio criado com sucesso",
-                    content = @Content(schema = @Schema(implementation = Condominio.class))
+                    content = @Content(schema = @Schema(implementation = CondominioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -51,7 +52,7 @@ public class CondominioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Lista de condominios retornada com sucesso",
-                    content = @Content(schema = @Schema(implementation = Condominio.class))
+                    content = @Content(schema = @Schema(implementation = CondominioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -69,7 +70,7 @@ public class CondominioController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Condominio atualizado com sucesso",
-                    content = @Content(schema = @Schema(implementation = Condominio.class))
+                    content = @Content(schema = @Schema(implementation = CondominioResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
