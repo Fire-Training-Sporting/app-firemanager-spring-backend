@@ -2,6 +2,8 @@ package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.SaldoDTO;
 import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
 import com.sptech.school.fira_manager_api.model.Usuario;
@@ -27,6 +29,27 @@ public class SaldoService {
         this.servicoRepository = servicoRepository;
     }
 
+
+    private UsuarioResponse toUsuarioResponse(Usuario usuario) {
+        if (usuario == null) return null;
+
+        return new UsuarioResponse(
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getTelefone()
+        );
+    }
+
+    private ServicoResponse toServicoResponse(Servico servico) {
+        if (servico == null) return null;
+
+        return new ServicoResponse(
+                servico.getId(),
+                servico.getNome()
+        );
+    }
+
     private SaldoResponse toSaldoResponse(Saldo saldo) {
         if (saldo == null) {
             return null;
@@ -34,9 +57,9 @@ public class SaldoService {
 
         return new SaldoResponse(
                 saldo.getId(),
-                saldo.getAluno(),
+                toUsuarioResponse(saldo.getAluno()),
                 saldo.getQuantidade(),
-                saldo.getServico()
+                toServicoResponse(saldo.getServico())
         );
     }
 

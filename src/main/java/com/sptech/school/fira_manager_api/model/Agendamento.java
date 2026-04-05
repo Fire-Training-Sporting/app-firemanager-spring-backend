@@ -185,4 +185,16 @@ public class Agendamento {
     public LocalDateTime getAtualizadoEm() {
         return atualizadoEm;
     }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
+    }
+
+    public void setAtualizadoEm(LocalDateTime atualizadoEm) {
+        this.atualizadoEm = atualizadoEm;
+    }
 }

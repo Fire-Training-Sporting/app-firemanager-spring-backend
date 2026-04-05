@@ -67,9 +67,14 @@ public class AgendamentoController {
             )
     })
     @GetMapping
-    public ResponseEntity<List<AgendamentoResponse>> listarAgendamentos(){
+    public ResponseEntity<List<AgendamentoResponse>> listarAgendamentos(@RequestParam (required = false) String status){
+
+        if (status != null) {
+            return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.buscarAgendamentoPorStatus(status));
+        }
         return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.listarAgendamento());
     }
+
 
     @Operation(summary = "Busca agendamento por ID", description = "Retorna os dados de um agendamento específico pelo ID")
     @ApiResponses(value = {
@@ -143,26 +148,6 @@ public class AgendamentoController {
     @PatchMapping("/status/{id}")
     public ResponseEntity<AgendamentoResponse> atualizarStatusAgendamentoPorId(@PathVariable Long id, @Valid @RequestBody AgendamentoStatusDTO dto){
         return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.atualizarStatusAgendamentoPorId(id, dto));
-    }
-
-    @Operation(summary = "Busca agendamentos por status", description = "Retorna todos os agendamentos com um status específico")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de agendamentos com o status especificado retornada com sucesso",
-                    content = @Content(schema = @Schema(implementation = AgendamentoResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Requisição inválida",
-                    content = @Content
-            )
-    })
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<AgendamentoResponse>> buscarAgendamentoPorStatus(@PathVariable String status){
-
-        System.out.println("Status recebido: " + status);
-        return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.buscarAgendamentoPorStatus(status));
     }
 
     @Operation(summary = "Deleta agendamento por ID", description = "Deleta um agendamento do sistema")

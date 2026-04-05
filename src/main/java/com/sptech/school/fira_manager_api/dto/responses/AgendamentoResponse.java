@@ -1,9 +1,12 @@
 package com.sptech.school.fira_manager_api.dto.responses;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.sptech.school.fira_manager_api.dto.CondominioDTO;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Usuario;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,38 +22,66 @@ import java.util.Date;
         "data",
         "horaInicio",
         "observacao",
-        "criadoEm",
-        "atualizadoEm",
         "status",
         "Saldo"
 })
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+
+@Schema(name = "AgendamentoResponse", description = "DTO de resposta de um Agendamento.")
 public class AgendamentoResponse {
 
+    @Schema(description = "ID do Agendamento", example = "1", required = true)
     private Long id;
-    private Usuario aluno;
+
+    @Schema(description = "Aluno do Agendamento", required = true)
+    private UsuarioResponse aluno;
+
+    @Schema(description = "Saldo do aluno no serviço", required = true)
     private SaldoResponse saldo;
+
+    @Schema(description = "Professor responsável pelo Agendamento", required = true)
     private ProfessorResponse professor;
+
+    @Schema(description = "Professor auxiliar do Agendamento", required = false)
     private ProfessorResponse auxiliar;
+
+    @Schema(description = "Serviço do Agendamento", required = true)
     private ServicoResponse servico;
+
+    @Schema(description = "Condomínio onde o Agendamento foi realizado", required = true)
+    private CondominioResponse condominio;
+
+    @Schema(description = "Data do Agendamento", example = "2026-04-14", required = true)
     private LocalDate data;
+
+    @Schema(description = "Hora de início do Agendamento", example = "10:00:00", required = true)
     private LocalTime horaInicio;
-    private String observacao;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime criadoEm;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime atualizadoEm;
+
+    @Schema(description = "Status do Agendamento", example = "pendente", required = true)
     private String status;
 
+    @Schema(description = "Observação do Agendamento", example = "Aula experimental", required = false)
+    private String observacao;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Schema(description = "Data de criação do Agendamento", example = "2026-04-05 01:43:30", required = true)
+    private LocalDateTime criadoEm;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Schema(description = "Data da última atualização do Agendamento", example = "2026-04-05 01:43:30", required = true)
+    private LocalDateTime atualizadoEm;
     public AgendamentoResponse() {
     }
 
-    public AgendamentoResponse(Long id, Usuario aluno,SaldoResponse saldo, ProfessorResponse professor, ProfessorResponse auxiliar, ServicoResponse servico, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
+    public AgendamentoResponse(Long id, UsuarioResponse aluno,SaldoResponse saldo, ProfessorResponse professor, ProfessorResponse auxiliar, ServicoResponse servico, CondominioResponse condominio, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
         this.id = id;
         this.aluno = aluno;
         this.saldo = saldo;
         this.professor = professor;
         this.auxiliar = auxiliar;
         this.servico = servico;
+        this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
         this.observacao = observacao;
@@ -59,12 +90,13 @@ public class AgendamentoResponse {
         this.status = status;
     }
 
-    public AgendamentoResponse(Long id, Usuario aluno,SaldoResponse saldo, ProfessorResponse professor, ServicoResponse servico, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
+    public AgendamentoResponse(Long id, UsuarioResponse aluno,SaldoResponse saldo, ProfessorResponse professor, ServicoResponse servico,CondominioResponse condominio, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
         this.id = id;
         this.aluno = aluno;
         this.saldo = saldo;
         this.professor = professor;
         this.servico = servico;
+        this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
         this.observacao = observacao;
@@ -81,11 +113,11 @@ public class AgendamentoResponse {
         this.id = id;
     }
 
-    public Usuario getAluno() {
+    public UsuarioResponse getAluno() {
         return aluno;
     }
 
-    public void setAluno(Usuario aluno) {
+    public void setAluno(UsuarioResponse aluno) {
         this.aluno = aluno;
     }
 
@@ -167,5 +199,13 @@ public class AgendamentoResponse {
 
     public void setSaldo(SaldoResponse saldo) {
         this.saldo = saldo;
+    }
+
+    public CondominioResponse getCondominio() {
+        return condominio;
+    }
+
+    public void setCondominio(CondominioResponse condominio) {
+        this.condominio = condominio;
     }
 }

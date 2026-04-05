@@ -4,10 +4,7 @@ import com.sptech.school.fira_manager_api.dto.AgendamentoAtualizarDTO;
 import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
 import com.sptech.school.fira_manager_api.dto.AgendamentoStatusDTO;
 import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.AgendamentoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ProfessorResponse;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.*;
 import com.sptech.school.fira_manager_api.model.*;
 import com.sptech.school.fira_manager_api.repository.*;
 import org.springframework.http.HttpStatus;
@@ -49,11 +46,9 @@ public class AgendamentoService {
 
         return new ProfessorResponse(
                 usuario.getId(),
-                usuario.getTipoUsuario(),
                 usuario.getNome(),
                 usuario.getEmail(),
-                usuario.getTelefone(),
-                usuario.getCriadoEm()
+                usuario.getTelefone()
         );
     }
 
@@ -74,10 +69,31 @@ public class AgendamentoService {
         }
 
         return new SaldoResponse(
-                saldo.getId(),
-                saldo.getAluno(),
                 saldo.getQuantidade(),
-                saldo.getServico()
+                toServicoResponse(saldo.getServico())
+        );
+    }
+
+    private UsuarioResponse toUsuarioResponse(Usuario usuario) {
+        if (usuario == null) return null;
+
+        return new UsuarioResponse(
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getTelefone()
+        );
+    }
+
+    private CondominioResponse toCondomioResponse(Condominio condominio) {
+        if (condominio == null) return null;
+
+        return new CondominioResponse(
+                condominio.getNome(),
+                condominio.getCidade(),
+                condominio.getBairro(),
+                condominio.getRua(),
+                condominio.getNumero()
         );
     }
     private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento) {
@@ -92,17 +108,20 @@ public class AgendamentoService {
         ProfessorResponse professorResponse = toProfessorResponse(agendamento.getProfessor());
         ServicoResponse servicoResponse = toServicoResponse(agendamento.getServico());
         SaldoResponse saldoResponse = toSaldoResponse(saldo);
+        UsuarioResponse usuarioResponse = toUsuarioResponse(agendamento.getAluno());
+        CondominioResponse condominioResponse = toCondomioResponse(agendamento.getCondominio());
 
         if (agendamento.getAuxiliar() != null) {
             ProfessorResponse auxiliarResponse = toProfessorResponse(agendamento.getAuxiliar());
 
             return new AgendamentoResponse(
                     agendamento.getId(),
-                    agendamento.getAluno(),
+                    usuarioResponse,
                     saldoResponse,
                     professorResponse,
                     auxiliarResponse,
                     servicoResponse,
+                    condominioResponse,
                     agendamento.getData(),
                     agendamento.getHoraInicio(),
                     agendamento.getObservacao(),
@@ -114,10 +133,11 @@ public class AgendamentoService {
 
         return new AgendamentoResponse(
                 agendamento.getId(),
-                agendamento.getAluno(),
+                usuarioResponse,
                 saldoResponse,
                 professorResponse,
                 servicoResponse,
+                condominioResponse,
                 agendamento.getData(),
                 agendamento.getHoraInicio(),
                 agendamento.getObservacao(),
@@ -137,7 +157,6 @@ public class AgendamentoService {
                         HttpStatus.NOT_FOUND, "Saldo não encontrado"
                 ));
 
-        // 🔹 valida saldo
         if (saldo.getQuantidade() <= 0) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "Saldo insuficiente"
@@ -275,14 +294,33 @@ public class AgendamentoService {
                         HttpStatus.NOT_FOUND, "Agendamento não encontrado"
                 ));
 
+
+        Saldo saldo = saldoRepository.findByAlunoIdAndServicoId(
+                agendamento.getAluno().getId(),
+                agendamento.getServico().getId()
+        ).orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Saldo não encontrado"
+        ));
+
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status não pode ser vazio");
         }
 
-        agendamento.setStatus(dto.getStatus().trim().toLowerCase());
+        String statusAtual = agendamento.getStatus().toLowerCase();
 
+        if (statusAtual.equals("confirmado") || statusAtual.equals("finalizado")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Status não pode ser atualizado");
+        }
+
+        if (statusAtual.equals("cancelado")) {
+            saldo.setQuantidade(saldo.getQuantidade() + 1);
+            saldoRepository.save(saldo);
+        }
+
+
+        agendamento.setStatus(dto.getStatus());
+        agendamento.setAtualizadoEm(LocalDateTime.now());
         agendamento = agendamentoRepository.save(agendamento);
-
         return toAgendamentoResponse(agendamento);
     }
 
