@@ -10,6 +10,7 @@ public class ServicoDTO {
     @NotBlank(message = "Nome é obrigatório")
     private String nome;
 
+
     public String getNome() {
         return nome;
     }
@@ -17,4 +18,5 @@ public class ServicoDTO {
     public void setNome(String nome) {
         this.nome = nome;
     }
+
 }

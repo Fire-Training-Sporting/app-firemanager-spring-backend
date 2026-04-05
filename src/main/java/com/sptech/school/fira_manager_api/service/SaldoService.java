@@ -47,6 +47,7 @@ public class SaldoService {
         return new ServicoResponse(
                 servico.getId(),
                 servico.getNome()
+
         );
     }
 

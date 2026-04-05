@@ -49,4 +49,12 @@ public class SaldoResponse {
     public void setServico(ServicoResponse servico) {
         this.servico = servico;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public UsuarioResponse getAluno() {
+        return aluno;
+    }
 }
