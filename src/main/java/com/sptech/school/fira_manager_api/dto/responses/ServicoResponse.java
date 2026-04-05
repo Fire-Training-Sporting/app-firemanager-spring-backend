@@ -1,7 +1,9 @@
 package com.sptech.school.fira_manager_api.dto.responses;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServicoResponse {
 
     @Schema(description = "ID do usuário", example = "1")
