@@ -1,11 +1,12 @@
 package com.sptech.school.fira_manager_api.observer;
 
 import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
+import com.sptech.school.fira_manager_api.model.Agendamento;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/*public class AgendamentoSubject {
+public class AgendamentoSubject {
 
     // Aqui é uma lista que pode ser adicionado qualquer instancia
     // que implemente a interface Observer
@@ -26,10 +27,10 @@ import java.util.List;
     // devido dentro da classe AlunoObserver e ProfessorObserver
     // o metodo update() ter um if para notificar somente se o
     // id do agendamento for exatamente igual ao id da instancia.
-    public void notifyObservers(AgendamentoDTO agendamento) {
+    public void notifyObservers(Agendamento agendamento) {
         for (Observer observer : observers) {
             observer.update(agendamento);
         }
     }
 }
-*/
+

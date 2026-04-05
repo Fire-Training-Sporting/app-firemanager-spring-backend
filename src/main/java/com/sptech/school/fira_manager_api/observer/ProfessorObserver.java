@@ -1,8 +1,9 @@
 package com.sptech.school.fira_manager_api.observer;
 
+import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.service.EmailService;
 
-/*public class ProfessorObserver implements Observer {
+public class ProfessorObserver implements Observer {
 
     private final Long id;
     private final EmailService emailService;
@@ -17,15 +18,18 @@ import com.sptech.school.fira_manager_api.service.EmailService;
     // professor envolvido no agendamento.
     @Override
     public void update(Agendamento agendamento) {
-        if (agendamento.getProfessorId().equals(id)) {
-//            String destinatario = agendamento.getProfessorEmail;
-//            String assunto = "Nova Aula Agendada!";
-//            String mensagem = "Olá! Você tem uma nova aula agendada com aluno(a) " + agendamento.getAlunoNome() + " no dia " + agendamento.getData() + " no " + agendamento.getCondominioNome();
-            System.out.println("Notificação para Professor ID " + id +
-                    ": Novo agendamento com Aluno ID " + agendamento.getAlunoId() +
-                    " em " + agendamento.getData());
+        if (agendamento.getProfessor().getId().equals(id)) {
+            String destinatario = agendamento.getProfessor().getEmail();
+            String assunto = "Nova Aula Agendada!";
+            String mensagem = "Olá! Você tem uma nova aula agendada com aluno(a): " + agendamento.getAluno().getNome() + " - " + agendamento.getAluno().getTelefone() + " no dia " + agendamento.getData() + " às " + agendamento.getHoraInicio() + " no " + agendamento.getCondominio().getNome();
+
+            try {
+                emailService.enviarEmail(destinatario, assunto, mensagem);
+                System.out.println("Email enviado para: " + destinatario);
+            } catch (Exception e) {
+                System.err.println("Erro ao enviar email: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 }
-
-*/

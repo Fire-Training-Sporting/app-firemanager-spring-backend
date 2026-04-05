@@ -1,8 +1,9 @@
 package com.sptech.school.fira_manager_api.observer;
 
+import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.service.EmailService;
 
-/*public class AlunoObserver implements Observer {
+public class AlunoObserver implements Observer {
 
     private final Long id;
     private final EmailService emailService;
@@ -16,16 +17,21 @@ import com.sptech.school.fira_manager_api.service.EmailService;
     // se é o mesmo aluno do observer (aqui), para notificar somente o
     // aluno envolvido no agendamento.
     @Override
-    //public void update(Agendamento agendamento) {
-       // if (agendamento.getAlunoId().equals(id)) {
-//            String destinatario = agendamento.getAlunoEmail();
-//            String assunto = "Nova Aula Agendada!";
-//            String mensagem = "Olá! Seu agendamento foi marcado para " + agendamento.getData();
-//            emailService.enviarEmail(destinatario, assunto, mensagem);
-            System.out.println("Notificação para Aluno ID " + id +
-                ": seu agendamento foi realizado para " + agendamento.getData());
+    public void update(Agendamento agendamento) {
+        if (agendamento.getAluno().getId().equals(id)) {
+            String destinatario = agendamento.getAluno().getEmail();
+            String assunto = "Nova Aula Agendada!";
+            String mensagem = "Olá! Seu agendamento foi marcado para " + agendamento.getData() + " às " + agendamento.getHoraInicio();
+
+            try {
+                emailService.enviarEmail(destinatario, assunto, mensagem);
+                System.out.println("Email enviado para: " + destinatario);
+            } catch (Exception e) {
+                System.err.println("Erro ao enviar email: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 }
-*/
+
 
