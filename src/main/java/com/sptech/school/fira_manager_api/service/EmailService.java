@@ -1,7 +1,10 @@
 package com.sptech.school.fira_manager_api.service;
 
-import org.springframework.mail.SimpleMailMessage;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,14 +16,22 @@ public class EmailService {
         this.emailSender = emailSender;
     }
 
-    // SimpleMailMessage é uma classe do framework que representa uma mensagem de email
+    // MimeMessage é uma classe do framework que representa uma mensagem de email permitindo anexos e HTML
     // tendo como parametro obrigatorio o destinatario, assunto e a mensagem.
+    @Async
     public void enviarEmail(String destinatario, String assunto, String texto) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(destinatario);
-        message.setSubject(assunto);
-        message.setText(texto);
+        try {
+            MimeMessage mensagem = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensagem, true, "UTF-8");
 
-        emailSender.send(message);
+            helper.setFrom("");
+            helper.setTo(destinatario);
+            helper.setSubject(assunto);
+            helper.setText(texto, true);
+
+            emailSender.send(mensagem);
+        } catch (MessagingException e) {
+            System.err.println("Erro ao enviar email para " + destinatario + ": " + e.getMessage());
+        }
     }
 }
