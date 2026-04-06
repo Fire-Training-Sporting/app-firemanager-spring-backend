@@ -1,5 +1,6 @@
 package com.sptech.school.fira_manager_api.controller;
 
+import com.sptech.school.fira_manager_api.config.JwtUtil;
 import com.sptech.school.fira_manager_api.dto.LoginDTO;
 import com.sptech.school.fira_manager_api.dto.UsuarioDTO;
 import com.sptech.school.fira_manager_api.dto.responses.UsuarioResponse;
@@ -76,8 +77,12 @@ public class UsuarioController {
             )
     })
     @PostMapping("/login")
-    public ResponseEntity<Usuario> logarUsuario(@Valid @RequestBody LoginDTO dto) {
-        return ResponseEntity.ok(usuarioService.logarUsuario(dto));
+    public ResponseEntity<String> logarUsuario(@Valid @RequestBody LoginDTO dto) {
+        Usuario usuario = usuarioService.logarUsuario(dto);
+
+        String token = JwtUtil.gerarToken(usuario.getEmail());
+
+        return ResponseEntity.ok(token);
     }
 
     @Operation(summary = "Lista usuários", description = "Retorna todos os usuários cadastrados ou filtra por nome")
