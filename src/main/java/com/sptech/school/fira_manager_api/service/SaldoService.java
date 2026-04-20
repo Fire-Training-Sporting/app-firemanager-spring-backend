@@ -154,10 +154,10 @@ public class SaldoService {
         }
 
         Long comoProfessor = agendamentoRepository
-                .countByProfessorIdAndStatus(id, "concluida");
+                .countByProfessorIdAndStatus(id, "concluido");
 
         Long comoAuxiliar = agendamentoRepository
-                .countByAuxiliarIdAndStatus(id, "concluida");
+                .countByAuxiliarIdAndStatus(id, "concluido");
 
         return toProfessorSaldoResponse(usuario, comoProfessor, comoAuxiliar);
     }

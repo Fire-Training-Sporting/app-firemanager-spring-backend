@@ -15,13 +15,13 @@ public class ProfessorSaldoResponse {
         private Integer aulasComoAuxiliar;
 
         @Schema(description = "Total geral de aulas", example = "3")
-        private Integer saldoDeAulas;
+        private Integer totalAulas;
 
         public ProfessorSaldoResponse(ProfessorResponse professor, Integer aulasComoProfessor, Integer aulasComoAuxiliar) {
             this.professor = professor;
             this.aulasComoProfessor = aulasComoProfessor;
             this.aulasComoAuxiliar = aulasComoAuxiliar;
-            this.saldoDeAulas = aulasComoProfessor + aulasComoAuxiliar;
+            this.totalAulas = aulasComoProfessor + aulasComoAuxiliar;
         }
 
         public ProfessorResponse getProfessor() {
@@ -37,7 +37,7 @@ public class ProfessorSaldoResponse {
         }
 
         public Integer getTotalAulas() {
-            return saldoDeAulas;
+            return totalAulas;
         }
     }
 
