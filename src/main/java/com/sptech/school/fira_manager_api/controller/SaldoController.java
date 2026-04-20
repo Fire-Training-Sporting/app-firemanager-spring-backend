@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.controller;
 
 import com.sptech.school.fira_manager_api.dto.SaldoDTO;
+import com.sptech.school.fira_manager_api.dto.responses.ProfessorSaldoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
 import com.sptech.school.fira_manager_api.service.SaldoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -136,5 +137,10 @@ public class SaldoController {
     public ResponseEntity<Void> deletarSaldoPorId(@PathVariable Long id) {
         saldoService.deletarSaldoPorId(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping("/professor/{id}")
+    public ResponseEntity<ProfessorSaldoResponse> buscarSaldoProfessorPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(saldoService.buscarSaldoProfessorPorId(id));
     }
 }

@@ -1,12 +1,12 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.UsuarioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.*;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
+import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
+import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.SaldoRepository;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
@@ -22,11 +22,13 @@ public class SaldoService {
     private final SaldoRepository saldoRepository;
     private final UsuarioRepository usuarioRepository;
     private final ServicoRepository servicoRepository;
+    private final AgendamentoRepository agendamentoRepository;
 
-    public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository) {
+    public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository, AgendamentoRepository agendamentoRepository) {
         this.saldoRepository = saldoRepository;
         this.usuarioRepository = usuarioRepository;
         this.servicoRepository = servicoRepository;
+        this.agendamentoRepository = agendamentoRepository;
     }
 
 
@@ -61,6 +63,24 @@ public class SaldoService {
                 toUsuarioResponse(saldo.getAluno()),
                 saldo.getQuantidade(),
                 toServicoResponse(saldo.getServico())
+        );
+    }
+
+    private ProfessorSaldoResponse toProfessorSaldoResponse(Usuario usuario, Long aulasComoProfessor, Long aulasComoAuxiliar) {
+        if (usuario == null) {
+            return null;
+        }
+
+        return new ProfessorSaldoResponse(
+                new ProfessorResponse(
+                        usuario.getId(),
+                        usuario.getNome(),
+                        usuario.getEmail(),
+                        usuario.getTelefone(),
+                        usuario.getCriadoEm()
+                ),
+                aulasComoProfessor.intValue(),
+                aulasComoAuxiliar.intValue()
         );
     }
 
@@ -120,5 +140,25 @@ public class SaldoService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não existe!");
         }
         saldoRepository.deleteById(id);
+    }
+
+    public ProfessorSaldoResponse buscarSaldoProfessorPorId(Long id) {
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        String tipoUsuario = usuario.getTipoUsuario().getCargo().toLowerCase();
+
+        if (!tipoUsuario.equals("professor")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário não é um professor");
+        }
+
+        Long comoProfessor = agendamentoRepository
+                .countByProfessorIdAndStatus(id, "concluida");
+
+        Long comoAuxiliar = agendamentoRepository
+                .countByAuxiliarIdAndStatus(id, "concluida");
+
+        return toProfessorSaldoResponse(usuario, comoProfessor, comoAuxiliar);
     }
 }
