@@ -1,14 +1,23 @@
 package com.sptech.school.fira_manager_api.service;
 
+import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.LoginDTO;
 import com.sptech.school.fira_manager_api.dto.UsuarioDTO;
+import com.sptech.school.fira_manager_api.dto.UsuarioDetalhesDto;
+import com.sptech.school.fira_manager_api.dto.UsuarioTokenDto;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,12 +31,21 @@ public class UsuarioService {
     private final TipoUsuarioRepository tipoUsuarioRepository;
     private final CondominioRepository condominioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final GerenciadorTokenJwt gerenciadorTokenJwt;
+    private final AuthenticationManager authenticationManager;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, TipoUsuarioRepository tipoUsuarioRepository, CondominioRepository condominioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          TipoUsuarioRepository tipoUsuarioRepository,
+                          CondominioRepository condominioRepository,
+                          PasswordEncoder passwordEncoder,
+                          GerenciadorTokenJwt gerenciadorTokenJwt,
+                          @Lazy AuthenticationManager authenticationManager) {
         this.usuarioRepository = usuarioRepository;
         this.tipoUsuarioRepository = tipoUsuarioRepository;
         this.condominioRepository = condominioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.gerenciadorTokenJwt = gerenciadorTokenJwt;
+        this.authenticationManager = authenticationManager;
     }
 
     public Usuario criarUsuario(UsuarioDTO dto) {
@@ -67,13 +85,30 @@ public class UsuarioService {
         return usuarioRepository.save(usuarioNovo);
     }
 
-    public Usuario logarUsuario(LoginDTO dto) {
-        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail());
+    public UsuarioTokenDto logarUsuario(LoginDTO dto) {
+        Authentication autenticacao = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha())
+        );
 
-        if (usuario == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado");
-        if (!passwordEncoder.matches(dto.getSenha(), usuario.getSenha())) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Senha inválida");
+        SecurityContextHolder.getContext().setAuthentication(autenticacao);
 
-        return usuario;
+        Object principal = autenticacao.getPrincipal();
+        UsuarioDetalhesDto usuarioDetalhes;
+
+        if (principal instanceof UsuarioDetalhesDto) {
+            usuarioDetalhes = (UsuarioDetalhesDto) principal;
+        } else {
+            String email = principal.toString();
+            Usuario usuarioEntity = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado após autenticação"));
+
+            usuarioDetalhes = new UsuarioDetalhesDto(usuarioEntity);
+        };
+
+        String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
+
+        Usuario usuario = usuarioDetalhes.getUsuario();
+        return new UsuarioTokenDto(usuario.getId(), usuario.getNome(), usuario.getEmail(), token);
     }
 
     public List<Usuario> buscarUsuarios() {
