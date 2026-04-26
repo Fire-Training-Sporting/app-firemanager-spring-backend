@@ -14,16 +14,25 @@ public class Servico {
     @Column(nullable = false, unique = true)
     private String nome;
 
+    @Column(nullable = false)
+    private Boolean ativo;
+
     public Servico() {
     }
 
-    public Servico(String nome) {
+    public Servico(Long id, String nome, Boolean ativo) {
+        this.id = id;
         this.nome = nome;
+        this.ativo = ativo;
     }
 
     public Servico(Long id, String nome) {
         this.id = id;
         this.nome = nome;
+    }
+
+    public Servico(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public Long getId() {
@@ -40,5 +49,13 @@ public class Servico {
 
     public void setNome(String nome) {
         this.nome = nome;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 }
