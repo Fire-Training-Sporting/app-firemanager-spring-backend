@@ -139,6 +139,19 @@ public class SaldoController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    @Operation(summary = "Busca saldo de aulas do professor por ID", description = "Retorna o total de aulas concluídas de um professor, como professor e como auxiliar")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Saldo do professor encontrado",
+                    content = @Content(schema = @Schema(implementation = ProfessorSaldoResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Professor não encontrado",
+                    content = @Content
+            )
+    })
     @GetMapping("/professor/{id}")
     public ResponseEntity<ProfessorSaldoResponse> buscarSaldoProfessorPorId(@PathVariable Long id) {
         return ResponseEntity.ok(saldoService.buscarSaldoProfessorPorId(id));
