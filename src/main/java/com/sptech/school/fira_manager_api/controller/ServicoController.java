@@ -28,24 +28,6 @@ public class ServicoController {
         this.servicoService = servicosService;
     }
 
-    @Operation(summary = "Cria um novo serviço", description = "Cria um serviço no sistema. Somente administradores podem acessar este endpoint")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Serviço criado com sucesso",
-                    content = @Content(schema = @Schema(implementation = ServicoResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Requisição inválida",
-                    content = @Content
-            )
-    })
-    @PostMapping
-    public ResponseEntity<Servico> criarServico(@Valid @RequestBody ServicoDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(servicoService.criarServico(dto));
-    }
-
     @Operation(summary = "Lista todos os serviços", description = "Retorna todos os serviços cadastrados")
     @ApiResponses(value = {
             @ApiResponse(
@@ -87,7 +69,7 @@ public class ServicoController {
         return ResponseEntity.ok(servicoService.buscarServicoPorId(id));
     }
 
-    @Operation(summary = "Atualiza serviço por ID", description = "Atualiza os dados de um serviço existente")
+    @Operation(summary = "Atualiza disponibilidade do serviço por ID", description = "Atualiza se o serviço está disponível ou não")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -105,9 +87,9 @@ public class ServicoController {
                     content = @Content
             )
     })
-    @PutMapping("/{id}")
-    public ResponseEntity<Servico> atualizarServicoPorId(@PathVariable Long id, @Valid @RequestBody ServicoDTO dto) {
-        return ResponseEntity.ok(servicoService.atualizarServicoPorId(id, dto));
+    @PatchMapping("/{id}")
+    public ResponseEntity<Servico> atualizarAtividadePorId(@PathVariable Long id, @Valid @RequestBody ServicoDTO dto) {
+        return ResponseEntity.ok(servicoService.atualizarAtividadePorId(id, dto.getAtivo()));
     }
 
     @Operation(summary = "Deleta serviço por ID", description = "Deleta um serviço do sistema")

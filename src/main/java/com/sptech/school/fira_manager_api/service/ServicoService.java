@@ -21,11 +21,6 @@ public class ServicoService {
         this.servicoRepository = servicoRepository;
     }
 
-    public Servico criarServico(ServicoDTO dto) {
-        Servico servicoNovo = new Servico(dto.getNome());
-        return servicoRepository.save(servicoNovo);
-    }
-
     public List<Servico> buscarServicos() {
         List<Servico> servicos = servicoRepository.findAll();
 
@@ -37,12 +32,13 @@ public class ServicoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O serviço não existe"));
     }
 
-    public Servico atualizarServicoPorId(Long id, ServicoDTO dto) {
-        Servico servicoNovo = servicoRepository.findById(id)
+    public Servico atualizarAtividadePorId(Long id, Integer ativo) {
+        Servico servico = servicoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O serviço não existe"));
 
-        servicoNovo.setNome(dto.getNome());
-        return servicoRepository.save(servicoNovo);
+        servico.setAtivo(ativo == 1);
+
+        return servicoRepository.save(servico);
     }
 
     public void deletarServicoPorId(Long id) {
