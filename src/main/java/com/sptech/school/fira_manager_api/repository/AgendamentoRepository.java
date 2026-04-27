@@ -12,4 +12,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 
    Long countByProfessorIdAndStatus(Long id, String status);
    Long countByAuxiliarIdAndStatus(Long id, String status);
+
+   Long countByProfessorIdAndServicoIdAndStatus(Long professorId, Long servicoId, String status);
+
+   Long countByAuxiliarIdAndServicoIdAndStatus(Long auxiliarId, Long servicoId, String status);
 }

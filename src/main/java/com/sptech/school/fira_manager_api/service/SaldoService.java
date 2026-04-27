@@ -19,6 +19,8 @@ import java.util.List;
 @Service
 public class SaldoService {
 
+
+
     private final SaldoRepository saldoRepository;
     private final UsuarioRepository usuarioRepository;
     private final ServicoRepository servicoRepository;
@@ -66,23 +68,6 @@ public class SaldoService {
         );
     }
 
-    private ProfessorSaldoResponse toProfessorSaldoResponse(Usuario usuario, Long aulasComoProfessor, Long aulasComoAuxiliar) {
-        if (usuario == null) {
-            return null;
-        }
-
-        return new ProfessorSaldoResponse(
-                new ProfessorResponse(
-                        usuario.getId(),
-                        usuario.getNome(),
-                        usuario.getEmail(),
-                        usuario.getTelefone(),
-                        usuario.getCriadoEm()
-                ),
-                aulasComoProfessor.intValue(),
-                aulasComoAuxiliar.intValue()
-        );
-    }
 
     public SaldoResponse criarSaldo(SaldoDTO dto) {
         Saldo saldoNovo = new Saldo();
@@ -147,18 +132,42 @@ public class SaldoService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
 
-        String tipoUsuario = usuario.getTipoUsuario().getCargo().toLowerCase();
-
-        if (!tipoUsuario.equals("professor")) {
+        if (!usuario.getTipoUsuario().getCargo().equalsIgnoreCase("professor")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário não é um professor");
         }
 
-        Long comoProfessor = agendamentoRepository
-                .countByProfessorIdAndStatus(id, "concluido");
+        List<Servico> servicos = servicoRepository.findAll();
 
-        Long comoAuxiliar = agendamentoRepository
-                .countByAuxiliarIdAndStatus(id, "concluido");
+        List<ServicoProfessorResponse> listaServicos = servicos.stream().map(servico -> {
 
-        return toProfessorSaldoResponse(usuario, comoProfessor, comoAuxiliar);
+            Long aulasProfessor = agendamentoRepository
+                    .countByProfessorIdAndServicoIdAndStatus(id, servico.getId(), "concluido");
+
+            Long aulasAuxiliar = agendamentoRepository
+                    .countByAuxiliarIdAndServicoIdAndStatus(id, servico.getId(), "concluido");
+
+            return new ServicoProfessorResponse(
+                    servico.getNome().toLowerCase(),
+                    aulasProfessor.intValue(),
+                    aulasAuxiliar.intValue()
+            );
+
+        }).toList();
+
+        int totalProfessor = listaServicos.stream().mapToInt(ServicoProfessorResponse::getAulasProfessor).sum();
+        int totalAuxiliar = listaServicos.stream().mapToInt(ServicoProfessorResponse::getAulasAuxiliar).sum();
+
+        return new ProfessorSaldoResponse(
+                new ProfessorResponse(
+                        usuario.getId(),
+                        usuario.getNome(),
+                        usuario.getEmail(),
+                        usuario.getTelefone(),
+                        usuario.getCriadoEm()
+                ),
+                listaServicos,
+                totalProfessor,
+                totalAuxiliar
+        );
     }
 }

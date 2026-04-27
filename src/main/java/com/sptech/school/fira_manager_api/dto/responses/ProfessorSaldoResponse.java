@@ -2,6 +2,8 @@ package com.sptech.school.fira_manager_api.dto.responses;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.List;
+
 
 @Schema(name = "ProfessorSaldoResponse", description = "DTO de resposta com o total de aulas concluídas de um professor.")
 public class ProfessorSaldoResponse {
@@ -17,14 +19,41 @@ public class ProfessorSaldoResponse {
         @Schema(description = "Total geral de aulas", example = "3")
         private Integer totalAulas;
 
-        public ProfessorSaldoResponse(ProfessorResponse professor, Integer aulasComoProfessor, Integer aulasComoAuxiliar) {
-            this.professor = professor;
-            this.aulasComoProfessor = aulasComoProfessor;
-            this.aulasComoAuxiliar = aulasComoAuxiliar;
-            this.totalAulas = aulasComoProfessor + aulasComoAuxiliar;
-        }
+        private List<ServicoProfessorResponse> servicos;
 
-        public ProfessorResponse getProfessor() {
+    public ProfessorSaldoResponse(ProfessorResponse professor, List<ServicoProfessorResponse> servicos, Integer aulasComoProfessor, Integer aulasComoAuxiliar) {
+        this.professor = professor;
+        this.servicos = servicos;
+        this.aulasComoProfessor = aulasComoProfessor;
+        this.aulasComoAuxiliar = aulasComoAuxiliar;
+        this.totalAulas = aulasComoProfessor + aulasComoAuxiliar;
+    }
+
+    public void setProfessor(ProfessorResponse professor) {
+        this.professor = professor;
+    }
+
+    public void setAulasComoProfessor(Integer aulasComoProfessor) {
+        this.aulasComoProfessor = aulasComoProfessor;
+    }
+
+    public void setAulasComoAuxiliar(Integer aulasComoAuxiliar) {
+        this.aulasComoAuxiliar = aulasComoAuxiliar;
+    }
+
+    public void setTotalAulas(Integer totalAulas) {
+        this.totalAulas = totalAulas;
+    }
+
+    public List<ServicoProfessorResponse> getServicos() {
+        return servicos;
+    }
+
+    public void setServicos(List<ServicoProfessorResponse> servicos) {
+        this.servicos = servicos;
+    }
+
+    public ProfessorResponse getProfessor() {
             return professor;
         }
 
