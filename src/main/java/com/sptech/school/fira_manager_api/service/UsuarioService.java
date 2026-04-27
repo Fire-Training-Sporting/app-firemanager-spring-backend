@@ -108,7 +108,8 @@ public class UsuarioService {
         String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
 
         Usuario usuario = usuarioDetalhes.getUsuario();
-        return new UsuarioTokenDto(usuario.getId(), usuario.getNome(), usuario.getEmail(), token);
+        String cargo = usuario.getTipoUsuario() != null ? usuario.getTipoUsuario().getCargo() : null;
+        return new UsuarioTokenDto(usuario.getId(), usuario.getNome(), usuario.getEmail(), cargo, token);
     }
 
     public List<Usuario> buscarUsuarios() {
