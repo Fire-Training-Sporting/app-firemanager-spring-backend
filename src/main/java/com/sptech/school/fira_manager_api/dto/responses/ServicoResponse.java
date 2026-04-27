@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServicoResponse {
 
-    @Schema(description = "ID do usuário", example = "1")
+    @Schema(description = "ID do Servico", example = "1")
     private Long id;
 
     @Schema(description = "Nome do serviço", example = "Tênis")

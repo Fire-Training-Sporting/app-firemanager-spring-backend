@@ -300,12 +300,17 @@ public class AgendamentoService {
         }
 
         String statusAtual = agendamento.getStatus().toLowerCase();
+        String statusNovo = dto.getStatus().trim().toLowerCase();
 
-        if (statusAtual.equals("confirmado") || statusAtual.equals("finalizado")) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Status não pode ser atualizado");
+        if (statusAtual.equals("finalizado")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Agendamento já finalizado");
         }
 
-        if (statusAtual.equals("cancelado")) {
+        if (statusAtual.equals("confirmado") && statusNovo.equals("cancelado")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Agendamento confirmado não pode ser cancelado");
+        }
+
+        if (statusNovo.equals("cancelado")) {
             saldo.setQuantidade(saldo.getQuantidade() + 1);
             saldoRepository.save(saldo);
         }

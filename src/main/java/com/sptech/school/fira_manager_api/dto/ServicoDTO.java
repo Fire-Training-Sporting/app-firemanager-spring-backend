@@ -10,9 +10,11 @@ public class ServicoDTO {
     @Schema(description = "Nome do serviço", example = "Tênis", required = true)
     private String nome;
 
+
     @Schema(description = "Disponibilidade do Serviço", example = "0 (false) / 1 (true)", required = true)
     @NotNull(message = "Atividade é obrigatório")
     private Integer ativo;
+
 
     public String getNome() {
         return nome;
@@ -22,6 +24,7 @@ public class ServicoDTO {
         this.nome = nome;
     }
 
+
     public Integer getAtivo() {
         return ativo;
     }
@@ -29,4 +32,5 @@ public class ServicoDTO {
     public void setAtivo(Integer ativo) {
         this.ativo = ativo;
     }
+
 }
