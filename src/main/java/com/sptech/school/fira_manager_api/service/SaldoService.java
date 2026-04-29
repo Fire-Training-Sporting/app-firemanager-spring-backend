@@ -1,12 +1,12 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.UsuarioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.*;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
+import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
+import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.SaldoRepository;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
@@ -19,14 +19,18 @@ import java.util.List;
 @Service
 public class SaldoService {
 
+
+
     private final SaldoRepository saldoRepository;
     private final UsuarioRepository usuarioRepository;
     private final ServicoRepository servicoRepository;
+    private final AgendamentoRepository agendamentoRepository;
 
-    public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository) {
+    public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository, AgendamentoRepository agendamentoRepository) {
         this.saldoRepository = saldoRepository;
         this.usuarioRepository = usuarioRepository;
         this.servicoRepository = servicoRepository;
+        this.agendamentoRepository = agendamentoRepository;
     }
 
 
@@ -47,6 +51,7 @@ public class SaldoService {
         return new ServicoResponse(
                 servico.getId(),
                 servico.getNome()
+
         );
     }
 
@@ -62,6 +67,7 @@ public class SaldoService {
                 toServicoResponse(saldo.getServico())
         );
     }
+
 
     public SaldoResponse criarSaldo(SaldoDTO dto) {
         Saldo saldoNovo = new Saldo();
@@ -119,5 +125,49 @@ public class SaldoService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não existe!");
         }
         saldoRepository.deleteById(id);
+    }
+
+    public ProfessorSaldoResponse buscarSaldoProfessorPorId(Long id) {
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        if (!usuario.getTipoUsuario().getCargo().equalsIgnoreCase("professor")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário não é um professor");
+        }
+
+        List<Servico> servicos = servicoRepository.findAll();
+
+        List<ServicoProfessorResponse> listaServicos = servicos.stream().map(servico -> {
+
+            Long aulasProfessor = agendamentoRepository
+                    .countByProfessorIdAndServicoIdAndStatus(id, servico.getId(), "concluido");
+
+            Long aulasAuxiliar = agendamentoRepository
+                    .countByAuxiliarIdAndServicoIdAndStatus(id, servico.getId(), "concluido");
+
+            return new ServicoProfessorResponse(
+                    servico.getNome().toLowerCase(),
+                    aulasProfessor.intValue(),
+                    aulasAuxiliar.intValue()
+            );
+
+        }).toList();
+
+        int totalProfessor = listaServicos.stream().mapToInt(ServicoProfessorResponse::getAulasProfessor).sum();
+        int totalAuxiliar = listaServicos.stream().mapToInt(ServicoProfessorResponse::getAulasAuxiliar).sum();
+
+        return new ProfessorSaldoResponse(
+                new ProfessorResponse(
+                        usuario.getId(),
+                        usuario.getNome(),
+                        usuario.getEmail(),
+                        usuario.getTelefone(),
+                        usuario.getCriadoEm()
+                ),
+                listaServicos,
+                totalProfessor,
+                totalAuxiliar
+        );
     }
 }
