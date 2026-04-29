@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.controller;
 
 import com.sptech.school.fira_manager_api.dto.PermissaoDTO;
+import com.sptech.school.fira_manager_api.dto.responses.PermissaoResponse;
 import com.sptech.school.fira_manager_api.model.Permissao;
 import com.sptech.school.fira_manager_api.service.PermissaoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +34,7 @@ public class PermissaoController {
             @ApiResponse(
                     responseCode = "201",
                     description = "Permissão criada com sucesso",
-                    content = @Content(schema = @Schema(implementation = Permissao.class))
+                    content = @Content(schema = @Schema(implementation = PermissaoResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -51,7 +52,7 @@ public class PermissaoController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Lista de permissões retornada com sucesso",
-                    content = @Content(schema = @Schema(implementation = Permissao.class))
+                    content = @Content(schema = @Schema(implementation = PermissaoResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -69,7 +70,7 @@ public class PermissaoController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Permissão atualizada com sucesso",
-                    content = @Content(schema = @Schema(implementation = Permissao.class))
+                    content = @Content(schema = @Schema(implementation = PermissaoResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
