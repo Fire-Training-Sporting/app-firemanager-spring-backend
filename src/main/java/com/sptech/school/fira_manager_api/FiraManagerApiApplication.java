@@ -2,16 +2,12 @@ package com.sptech.school.fira_manager_api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.persistence.autoconfigure.EntityScan;
-import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
-@EnableAsync
-@EntityScan("com.sptech.school.fira_manager_api.model")
 public class FiraManagerApiApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(FiraManagerApiApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(FiraManagerApiApplication.class, args);
+    }
 
 }
