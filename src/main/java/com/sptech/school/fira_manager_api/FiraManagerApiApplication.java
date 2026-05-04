@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class FiraManagerApiApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(FiraManagerApiApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(FiraManagerApiApplication.class, args);
+    }
 
 }
