@@ -1,9 +1,9 @@
 package com.sptech.school.fira_manager_api.observer;
 
+import java.time.format.DateTimeFormatter;
+
 import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.service.EmailService;
-
-import java.time.format.DateTimeFormatter;
 
 public class ProfessorObserver implements Observer {
 

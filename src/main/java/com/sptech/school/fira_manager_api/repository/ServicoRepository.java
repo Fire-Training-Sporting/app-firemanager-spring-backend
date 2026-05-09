@@ -1,8 +1,8 @@
 package com.sptech.school.fira_manager_api.repository;
 
-import com.sptech.school.fira_manager_api.model.Servico;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ServicoRepository extends JpaRepository<Servico, Long> {
+import com.sptech.school.fira_manager_api.model.Servico;
 
+public interface ServicoRepository extends JpaRepository<Servico, Long> {
 }

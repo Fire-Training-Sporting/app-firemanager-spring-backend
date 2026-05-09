@@ -1,5 +1,17 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.util.List;
+
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.LoginDTO;
 import com.sptech.school.fira_manager_api.dto.UsuarioDTO;
@@ -11,18 +23,6 @@ import com.sptech.school.fira_manager_api.model.Usuario;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @Service
 public class UsuarioService {
