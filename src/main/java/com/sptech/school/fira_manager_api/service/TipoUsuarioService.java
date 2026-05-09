@@ -1,11 +1,12 @@
 package com.sptech.school.fira_manager_api.service;
 
-import com.sptech.school.fira_manager_api.dto.responses.TipoUsuarioResponse;
-import com.sptech.school.fira_manager_api.model.TipoUsuario;
-import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.sptech.school.fira_manager_api.dto.responses.tipoUsuario.TipoUsuarioResponse;
+import com.sptech.school.fira_manager_api.model.TipoUsuario;
+import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
 
 @Service
 public class TipoUsuarioService {

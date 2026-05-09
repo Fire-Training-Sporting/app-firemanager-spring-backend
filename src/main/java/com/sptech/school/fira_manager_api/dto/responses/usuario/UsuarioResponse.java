@@ -1,12 +1,12 @@
-package com.sptech.school.fira_manager_api.dto.responses;
+package com.sptech.school.fira_manager_api.dto.responses.usuario;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.sptech.school.fira_manager_api.dto.CondominioDTO;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
-import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "UsuarioResponse", description = "Representação de um usuário retornado pela API")

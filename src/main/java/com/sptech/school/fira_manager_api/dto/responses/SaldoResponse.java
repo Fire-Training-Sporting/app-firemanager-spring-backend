@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.dto.responses;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Servico;
 import com.sptech.school.fira_manager_api.model.Usuario;
 import io.swagger.v3.oas.annotations.media.Schema;

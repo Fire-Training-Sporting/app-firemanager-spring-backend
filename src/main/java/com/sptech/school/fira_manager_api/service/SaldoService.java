@@ -1,25 +1,28 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.*;
+import com.sptech.school.fira_manager_api.dto.responses.ProfessorResponse;
+import com.sptech.school.fira_manager_api.dto.responses.ProfessorSaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.ServicoProfessorResponse;
+import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
-import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
 import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.SaldoRepository;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @Service
 public class SaldoService {
-
-
 
     private final SaldoRepository saldoRepository;
     private final UsuarioRepository usuarioRepository;
