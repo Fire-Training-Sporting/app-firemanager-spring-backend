@@ -37,8 +37,10 @@ public class SegurancaConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/usuarios/login").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/usuarios").permitAll() // COM ESSA CONFIG QUALQUER UM CONSEGUE CRIAR, O IDEAL É DEPOIS MUDAR PARA SOMENTE ADM
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
