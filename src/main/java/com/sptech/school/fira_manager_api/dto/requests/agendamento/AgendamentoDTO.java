@@ -36,6 +36,10 @@ public class AgendamentoDTO {
     @NotNull(message = "Hora de início é obrigatória")
     private LocalTime horaInicio;
 
+    @Schema(description = "Hora de fim do agendamento", example = "15:30:00", nullable = true)
+    @NotNull(message = "Hora de fim é obrigatória")
+    private LocalTime horaFim;
+
     @Schema(description = "Observações adicionais", example = "Aluno prefere atendimento rápido", nullable = true)
     private String observacao;
 
@@ -102,5 +106,13 @@ public class AgendamentoDTO {
 
     public void setObservacao(String observacao) {
         this.observacao = observacao;
+    }
+
+    public LocalTime getHoraFim() {
+        return horaFim;
+    }
+
+    public void setHoraFim(LocalTime horaFim) {
+        this.horaFim = horaFim;
     }
 }
