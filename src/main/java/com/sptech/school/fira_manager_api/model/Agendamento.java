@@ -1,15 +1,25 @@
 package com.sptech.school.fira_manager_api.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "tb_agendamentos")
@@ -43,9 +53,15 @@ public class Agendamento {
     @Column(name = "data_agendamento", nullable = false)
     private LocalDate data;
 
+
     @NotNull(message = "Hora de início não pode estar nula")
     @Column(name = "hora_inicio", nullable = false)
     private LocalTime horaInicio;
+
+    @NotNull(message = "Hora de fim não pode estar nula")
+    @Column(name = "hora_fim", nullable = false)
+    private LocalTime horaFim;
+
 
     @Size(max = 255, message = "Observação deve ter no máximo 255 caracteres")
     @Column(name = "observacao", length = 255)
@@ -53,9 +69,7 @@ public class Agendamento {
 
     @Column(name = "status", nullable = false)
     private String status = "pendente";
-
-
-
+    
     @PrePersist
     public void prePersist() {
         if (this.status == null) {
@@ -77,7 +91,7 @@ public class Agendamento {
     public Agendamento() {
     }
 
-    public Agendamento(Long id, Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio, String observacao, String status, LocalDateTime criadoEm, LocalDateTime atualizadoEm) {
+    public Agendamento(Long id, Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio,LocalTime horaFim, String observacao, String status, LocalDateTime criadoEm, LocalDateTime atualizadoEm) {
         this.id = id;
         this.aluno = aluno;
         this.professor = professor;
@@ -86,13 +100,14 @@ public class Agendamento {
         this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.observacao = observacao;
         this.status = status;
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
     }
 
-    public Agendamento(Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio, String observacao) {
+    public Agendamento(Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio,LocalTime horaFim, String observacao) {
         this.aluno = aluno;
         this.professor = professor;
         this.auxiliar = auxiliar;
@@ -100,6 +115,7 @@ public class Agendamento {
         this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.observacao = observacao;
     }
 
@@ -161,6 +177,14 @@ public class Agendamento {
 
     public void setHoraInicio(LocalTime horaInicio) {
         this.horaInicio = horaInicio;
+    }
+
+    public LocalTime getHoraFim() {
+        return horaFim;
+    }
+
+    public void setHoraFim(LocalTime horaFim) {
+        this.horaFim = horaFim;
     }
 
     public String getObservacao() {

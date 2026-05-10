@@ -1,23 +1,32 @@
 package com.sptech.school.fira_manager_api.controller;
-import com.sptech.school.fira_manager_api.dto.AgendamentoAtualizarDTO;
-import com.sptech.school.fira_manager_api.dto.AgendamentoDTO;
-import com.sptech.school.fira_manager_api.dto.AgendamentoStatusDTO;
-import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.AgendamentoResponse;
-import com.sptech.school.fira_manager_api.model.Saldo;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoDTO;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteDTO;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusDTO;
+import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
 import com.sptech.school.fira_manager_api.service.AgendamentoService;
+
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/agendamentos")
@@ -51,6 +60,24 @@ public class AgendamentoController {
     @PostMapping
     public ResponseEntity<AgendamentoResponse> criarAgendamento(@Valid @RequestBody AgendamentoDTO dto){
         return ResponseEntity.status(HttpStatus.CREATED).body(agendamentoService.criarAgendamento(dto));
+    }
+
+    @Operation(summary = "Cria agendamentos recorrentes")
+    @ApiResponses(value = {
+    @ApiResponse(
+                responseCode = "201",
+                description = "Agendamentos recorrentes criados com sucesso",
+                content = @Content(
+                mediaType = "application/json",
+                array = @ArraySchema(
+                        schema = @Schema(implementation = AgendamentoResponse.class)
+                )
+                )
+        )
+    })
+    @PostMapping("/recorrente")
+    public ResponseEntity<List<AgendamentoResponse>> criarAgendamentoRecorrente(@Valid @RequestBody AgendamentoRecorrenteDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(agendamentoService.criarAgendamentoRecorrente(dto));
     }
 
     @Operation(summary = "Lista todos os agendamentos", description = "Retorna todos os agendamentos cadastrados no sistema")
@@ -123,7 +150,7 @@ public class AgendamentoController {
             )
     })
     @PatchMapping("/{id}")
-    public ResponseEntity<AgendamentoResponse> atualizarAgendamentoPorId(@Valid @RequestBody AgendamentoAtualizarDTO dto, @PathVariable Long id){
+    public ResponseEntity<AgendamentoResponse> atualizarAgendamentoPorId(@Valid @RequestBody AgendamentoDTO dto, @PathVariable Long id){
         return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.atualizarAgendamentoPorId(dto, id));
     }
 
@@ -171,8 +198,6 @@ public class AgendamentoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarAgendamentoPorId(@PathVariable Long id){
         agendamentoService.deletarAgendamentoPorId(id);
-        return ResponseEntity.status(HttpStatus.OK).build();
+        return ResponseEntity.noContent().build();
     }
-
-
 }

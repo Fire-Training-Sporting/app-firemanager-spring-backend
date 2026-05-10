@@ -10,16 +10,16 @@ public class SaldoDTO {
     private Long aluno;
 
     @Schema(description = "Saldo do usuario", example = "12")
-    private Integer quantidade;
+    private Double quantidade;
 
     @Schema(description = "Aula de tenis", example = "Tenis")
     private Long servico;
 
-    public Integer getQuantidade() {
+    public Double getQuantidade() {
         return quantidade;
     }
 
-    public void setQuantidade(Integer quantidade) {
+    public void setQuantidade(Double quantidade) {
         this.quantidade = quantidade;
     }
 

@@ -1,17 +1,19 @@
-package com.sptech.school.fira_manager_api.dto.responses;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.sptech.school.fira_manager_api.dto.CondominioDTO;
-import com.sptech.school.fira_manager_api.model.Saldo;
-import com.sptech.school.fira_manager_api.model.Usuario;
-import io.swagger.v3.oas.annotations.media.Schema;
+package com.sptech.school.fira_manager_api.dto.responses.agendamento;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.sptech.school.fira_manager_api.dto.responses.CondominioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.ProfessorResponse;
+import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @JsonPropertyOrder({
         "id",
@@ -20,7 +22,7 @@ import java.util.Date;
         "auxiliar",
         "status",
         "servico",
-        "Saldo",
+        "saldo",
         "data",
         "horaInicio",
         "observacao"
@@ -71,6 +73,7 @@ public class AgendamentoResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "Data da última atualização do Agendamento", example = "2026-04-05 01:43:30", required = true)
     private LocalDateTime atualizadoEm;
+    
     public AgendamentoResponse() {
     }
 

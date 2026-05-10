@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.dto.responses;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Servico;
 import com.sptech.school.fira_manager_api.model.Usuario;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,28 +18,30 @@ public class SaldoResponse {
     private UsuarioResponse aluno;
 
     @Schema(description = "Quantidade de saldo disponível", example = "10", required = true)
-    private Integer quantidade;
+    private Double quantidade;
 
     @Schema(description = "Serviço relacionado ao saldo", required = true)
     private ServicoResponse servico;
 
-    public SaldoResponse(Integer quantidade, ServicoResponse servico) {
+    public SaldoResponse(Double quantidade, ServicoResponse servico) {
         this.quantidade = quantidade;
         this.servico = servico;
     }
 
-    public SaldoResponse(Long id, UsuarioResponse aluno, Integer quantidade, ServicoResponse servico) {
+    public SaldoResponse(Long id, UsuarioResponse aluno, Double quantidade, ServicoResponse servico) {
         this.id = id;
         this.aluno = aluno;
         this.quantidade = quantidade;
         this.servico = servico;
     }
 
-    public Integer getQuantidade() {
+
+
+    public Double getQuantidade() {
         return quantidade;
     }
 
-    public void setQuantidade(Integer quantidade) {
+    public void setQuantidade(Double quantidade) {
         this.quantidade = quantidade;
     }
 
