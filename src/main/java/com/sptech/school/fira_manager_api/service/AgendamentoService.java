@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.service;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -223,13 +224,28 @@ public class AgendamentoService {
         subject.notifyObservers(agendamento);
     }
 
+    private Double calcularCustoSaldo(LocalTime horaInicio, LocalTime horaFim) {
+        long minutos = java.time.Duration.between(horaInicio, horaFim).toMinutes();
+
+        if (minutos <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hora fim deve ser depois da hora início");
+        }
+
+        if (minutos % 30 != 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O intervalo deve ser em 30 minutos");
+        }
+
+        return minutos / 60.0;
+    }
+
     @Transactional
     public AgendamentoResponse criarAgendamento(AgendamentoDTO dto) {
         Agendamento agendamento = new Agendamento();
 
         Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
+        Double custo = calcularCustoSaldo(dto.getHoraInicio(), dto.getHoraFim());
 
-        if (saldo.getQuantidade() <= 0) {
+        if (saldo.getQuantidade() < custo) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
         }
 
@@ -243,7 +259,9 @@ public class AgendamentoService {
                 dto
         );
 
-        saldo.setQuantidade(saldo.getQuantidade() - 1);
+        agendamento.setHoraFim(dto.getHoraFim());
+
+        saldo.setQuantidade(saldo.getQuantidade() - custo);
 
         saldoRepository.save(saldo);
         agendamento = agendamentoRepository.save(agendamento);
@@ -256,17 +274,19 @@ public class AgendamentoService {
     @Transactional
     public List<AgendamentoResponse> criarAgendamentoRecorrente(AgendamentoRecorrenteDTO dto) {
         Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
+        Double custo = calcularCustoSaldo(dto.getHoraInicio(), dto.getHoraFim());
+        Double custoTotal = custo * dto.getQuantidadeRecorrencias();
 
-        if (saldo.getQuantidade() <= 0) {
+        if (saldo.getQuantidade() < custo) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
         }
 
-        if (dto.getQuantidadeRecorrencias() > saldo.getQuantidade()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantidade de recorrências excede o saldo disponível");
+        if (saldo.getQuantidade() < custoTotal) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantidade de recorrências excede o saldo disponível"
+            );
         }
 
         int quantidadeRecorrencias = dto.getQuantidadeRecorrencias();
-
         List<AgendamentoResponse> agendamentosCriados = new ArrayList<>();
 
         for (int i = 0; i < quantidadeRecorrencias; i++) {
@@ -283,8 +303,9 @@ public class AgendamentoService {
             );
 
             agendamento.setData(dto.getData().plusDays(i * 7L));
+            agendamento.setHoraFim(dto.getHoraFim());
 
-            saldo.setQuantidade(saldo.getQuantidade() - 1);
+            saldo.setQuantidade(saldo.getQuantidade() - custo);
 
             agendamento = agendamentoRepository.save(agendamento);
 
@@ -324,19 +345,20 @@ public class AgendamentoService {
 
         if (!servicoAntigo.getId().equals(servicoNovo.getId())) {
             Saldo saldoNovo = buscarSaldo(dto.getAluno(), servicoNovo.getId());
+            Double custo = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
 
-            if (saldoNovo.getQuantidade() <= 0) {
+            if (saldoNovo.getQuantidade() < custo) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente para o novo serviço");
             }
 
-            saldo.setQuantidade(saldo.getQuantidade() + 1);
-            saldoNovo.setQuantidade(saldoNovo.getQuantidade() - 1);
+            saldo.setQuantidade(saldo.getQuantidade() + custo);
+            saldoNovo.setQuantidade(saldoNovo.getQuantidade() - custo);
 
             saldoRepository.save(saldo);
             saldoRepository.save(saldoNovo);
 
             saldo = saldoNovo;
-         }
+        }
 
         agendamento.setAluno(buscarUsuario(dto.getAluno(), "Aluno"));
         agendamento.setProfessor(buscarUsuario(dto.getProfessor(), "Professor"));
@@ -351,7 +373,6 @@ public class AgendamentoService {
 
         return toAgendamentoResponse(agendamento, saldo);
     }
-
     @Scheduled(fixedRate = 60000)
     @Transactional
     public void confirmarAgendamentosAutomaticamente() {
@@ -387,10 +408,7 @@ public class AgendamentoService {
         );
 
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Status não pode ser vazio"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status não pode ser vazio");
         }
 
         String statusAtual = agendamento.getStatus().trim().toLowerCase();
@@ -401,7 +419,7 @@ public class AgendamentoService {
         }
 
         boolean transicaoValida = (statusAtual.equals("pendente") &&
-                        (statusNovo.equals("confirmado") || statusNovo.equals("cancelado")))
+                (statusNovo.equals("confirmado") || statusNovo.equals("cancelado")))
                 ||
                 (statusAtual.equals("confirmado") &&
                         (statusNovo.equals("finalizado") || statusNovo.equals("cancelado")));
@@ -412,11 +430,11 @@ public class AgendamentoService {
 
         if (statusNovo.equals("cancelado")) {
             if (dto.getObservacao() == null || dto.getObservacao().isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A justificativa do cancelamento é obrigatória"
-                );
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A justificativa do cancelamento é obrigatória");
             }
 
-            saldo.setQuantidade(saldo.getQuantidade() + 1);
+            Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
+            saldo.setQuantidade(saldo.getQuantidade() + custoEstorno);
             saldoRepository.save(saldo);
 
             agendamento.setObservacao(dto.getObservacao().trim());
@@ -447,7 +465,8 @@ public class AgendamentoService {
                 agendamento.getServico().getId()
         );
 
-        saldo.setQuantidade(saldo.getQuantidade() + 1);
+        Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
+        saldo.setQuantidade(saldo.getQuantidade() + custoEstorno);
         saldoRepository.save(saldo);
 
         agendamentoRepository.deleteById(id);

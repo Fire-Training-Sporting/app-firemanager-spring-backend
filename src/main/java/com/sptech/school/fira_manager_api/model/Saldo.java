@@ -23,12 +23,12 @@ public class Saldo {
 
     @NotNull
     @Column(name = "quantidade",  nullable = false)
-    private Integer quantidade;
+    private Double quantidade;
 
     public Saldo() {
     }
 
-    public Saldo(Long id, Servico servico, Usuario aluno, Integer quantidade) {
+    public Saldo(Long id, Servico servico, Usuario aluno, Double quantidade) {
         this.id = id;
         this.servico = servico;
         this.aluno = aluno;
@@ -55,11 +55,11 @@ public class Saldo {
         return aluno;
     }
 
-    public Integer getQuantidade() {
+    public Double getQuantidade() {
         return quantidade;
     }
 
-    public void setQuantidade(Integer quantidade) {
+    public void setQuantidade(Double quantidade) {
         this.quantidade = quantidade;
     }
 

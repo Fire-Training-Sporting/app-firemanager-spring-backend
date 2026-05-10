@@ -53,9 +53,15 @@ public class Agendamento {
     @Column(name = "data_agendamento", nullable = false)
     private LocalDate data;
 
+
     @NotNull(message = "Hora de início não pode estar nula")
     @Column(name = "hora_inicio", nullable = false)
     private LocalTime horaInicio;
+
+    @NotNull(message = "Hora de fim não pode estar nula")
+    @Column(name = "hora_fim", nullable = false)
+    private LocalTime horaFim;
+
 
     @Size(max = 255, message = "Observação deve ter no máximo 255 caracteres")
     @Column(name = "observacao", length = 255)
@@ -85,7 +91,7 @@ public class Agendamento {
     public Agendamento() {
     }
 
-    public Agendamento(Long id, Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio, String observacao, String status, LocalDateTime criadoEm, LocalDateTime atualizadoEm) {
+    public Agendamento(Long id, Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio,LocalTime horaFim, String observacao, String status, LocalDateTime criadoEm, LocalDateTime atualizadoEm) {
         this.id = id;
         this.aluno = aluno;
         this.professor = professor;
@@ -94,13 +100,14 @@ public class Agendamento {
         this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.observacao = observacao;
         this.status = status;
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
     }
 
-    public Agendamento(Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio, String observacao) {
+    public Agendamento(Usuario aluno, Usuario professor, Usuario auxiliar, Servico servico, Condominio condominio, LocalDate data, LocalTime horaInicio,LocalTime horaFim, String observacao) {
         this.aluno = aluno;
         this.professor = professor;
         this.auxiliar = auxiliar;
@@ -108,6 +115,7 @@ public class Agendamento {
         this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.observacao = observacao;
     }
 
@@ -169,6 +177,14 @@ public class Agendamento {
 
     public void setHoraInicio(LocalTime horaInicio) {
         this.horaInicio = horaInicio;
+    }
+
+    public LocalTime getHoraFim() {
+        return horaFim;
+    }
+
+    public void setHoraFim(LocalTime horaFim) {
+        this.horaFim = horaFim;
     }
 
     public String getObservacao() {
