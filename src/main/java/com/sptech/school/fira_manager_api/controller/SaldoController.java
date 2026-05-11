@@ -1,8 +1,8 @@
 package com.sptech.school.fira_manager_api.controller;
 
-import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.ProfessorSaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.requests.saldo.SaldoRequest;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.ProfessorSaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
 import com.sptech.school.fira_manager_api.service.SaldoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -47,7 +47,7 @@ public class SaldoController {
             )
     })
     @PostMapping
-    public ResponseEntity<SaldoResponse> criarSaldo(@Valid @RequestBody SaldoDTO dto) {
+    public ResponseEntity<SaldoResponse> criarSaldo(@Valid @RequestBody SaldoRequest dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(saldoService.criarSaldo(dto));
     }
 
@@ -111,7 +111,7 @@ public class SaldoController {
             )
     })
     @PutMapping("/{id}")
-    public ResponseEntity<SaldoResponse> atualizarSaldoPorId(@PathVariable Long id, @Valid @RequestBody SaldoDTO dto) {
+    public ResponseEntity<SaldoResponse> atualizarSaldoPorId(@PathVariable Long id, @Valid @RequestBody SaldoRequest dto) {
         return ResponseEntity.status(HttpStatus.OK).body(saldoService.atualizarSaldoPorId(dto, id));
     }
 

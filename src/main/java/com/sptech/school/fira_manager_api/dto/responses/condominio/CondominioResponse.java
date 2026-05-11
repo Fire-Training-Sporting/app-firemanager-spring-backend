@@ -1,27 +1,36 @@
-package com.sptech.school.fira_manager_api.dto.responses;
-
-
+package com.sptech.school.fira_manager_api.dto.responses.condominio;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 
-@Schema(name = "CondominioDTO", description = "DTO usado para criar ou atualizar um Condominio.")
+@Schema(name = "CondominioResponse", description = "Dados de resposta de um Condomínio.")
 public class CondominioResponse {
 
-    @Schema(description = "Nome do Condominio", example = "Condomínio LIV", required = true)
+    @Schema(description = "ID do Condomínio", example = "1")
+    private Long id;
+
+    @Schema(description = "Nome do Condomínio", example = "Condomínio LIV")
     private String nome;
 
-    @Schema(description = "Cidade do Condominio", example = "São Paulo", required = true)
+    @Schema(description = "Cidade do Condomínio", example = "São Paulo")
     private String cidade;
 
-    @Schema(description = "Bairro do Condominio", example = "São Miguel Paulista", required = true)
+    @Schema(description = "Bairro do Condomínio", example = "São Miguel Paulista")
     private String bairro;
 
-    @Schema(description = "Rua do Condominio", example = "Rua Santo Antônio", required = true)
+    @Schema(description = "Rua do Condomínio", example = "Rua Santo Antônio")
     private String rua;
 
-    @Schema(description = "Número do Condominio", example = "571", required = true)
+    @Schema(description = "Número do Condomínio", example = "571")
     private String numero;
+
+    public CondominioResponse(Long id, String nome, String cidade, String bairro, String rua, String numero) {
+        this.id = id;
+        this.nome = nome;
+        this.cidade = cidade;
+        this.bairro = bairro;
+        this.rua = rua;
+        this.numero = numero;
+    }
 
     public CondominioResponse(String nome, String cidade, String bairro, String rua, String numero) {
         this.nome = nome;
@@ -29,6 +38,14 @@ public class CondominioResponse {
         this.bairro = bairro;
         this.rua = rua;
         this.numero = numero;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getNome() {
@@ -70,7 +87,4 @@ public class CondominioResponse {
     public void setNumero(String numero) {
         this.numero = numero;
     }
-
-
 }
-

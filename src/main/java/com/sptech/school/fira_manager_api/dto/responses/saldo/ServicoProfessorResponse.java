@@ -1,4 +1,4 @@
-package com.sptech.school.fira_manager_api.dto.responses;
+package com.sptech.school.fira_manager_api.dto.responses.saldo;
 
 public class ServicoProfessorResponse {
 
