@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoDTO;
-import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteDTO;
-import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusDTO;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRequest;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
 import com.sptech.school.fira_manager_api.service.AgendamentoService;
 
@@ -58,7 +58,7 @@ public class AgendamentoController {
             )
     })
     @PostMapping
-    public ResponseEntity<AgendamentoResponse> criarAgendamento(@Valid @RequestBody AgendamentoDTO dto){
+    public ResponseEntity<AgendamentoResponse> criarAgendamento(@Valid @RequestBody AgendamentoRequest dto){
         return ResponseEntity.status(HttpStatus.CREATED).body(agendamentoService.criarAgendamento(dto));
     }
 
@@ -76,7 +76,7 @@ public class AgendamentoController {
         )
     })
     @PostMapping("/recorrente")
-    public ResponseEntity<List<AgendamentoResponse>> criarAgendamentoRecorrente(@Valid @RequestBody AgendamentoRecorrenteDTO dto) {
+    public ResponseEntity<List<AgendamentoResponse>> criarAgendamentoRecorrente(@Valid @RequestBody AgendamentoRecorrenteRequest dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(agendamentoService.criarAgendamentoRecorrente(dto));
     }
 
@@ -150,7 +150,7 @@ public class AgendamentoController {
             )
     })
     @PatchMapping("/{id}")
-    public ResponseEntity<AgendamentoResponse> atualizarAgendamentoPorId(@Valid @RequestBody AgendamentoDTO dto, @PathVariable Long id){
+    public ResponseEntity<AgendamentoResponse> atualizarAgendamentoPorId(@Valid @RequestBody AgendamentoRequest dto, @PathVariable Long id){
         return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.atualizarAgendamentoPorId(dto, id));
     }
 
@@ -173,7 +173,7 @@ public class AgendamentoController {
             )
     })
     @PatchMapping("/status/{id}")
-    public ResponseEntity<AgendamentoResponse> atualizarStatusAgendamentoPorId(@PathVariable Long id, @Valid @RequestBody AgendamentoStatusDTO dto){
+    public ResponseEntity<AgendamentoResponse> atualizarStatusAgendamentoPorId(@PathVariable Long id, @Valid @RequestBody AgendamentoStatusRequest dto){
         return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.atualizarStatusAgendamentoPorId(id, dto));
     }
 

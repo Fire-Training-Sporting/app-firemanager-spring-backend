@@ -1,26 +1,24 @@
-package com.sptech.school.fira_manager_api.dto.responses;
+package com.sptech.school.fira_manager_api.dto.responses.saldo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
-import com.sptech.school.fira_manager_api.model.Servico;
-import com.sptech.school.fira_manager_api.model.Usuario;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-
-@Schema(name = "SaldoResponse", description = "DTO de resposta do Saldo de um aluno em um serviço.")
+@Schema(name = "SaldoResponse", description = "Dados de resposta do Saldo de um aluno em um serviço.")
 public class SaldoResponse {
 
-    @Schema(description = "ID do Saldo", example = "1", required = false)
+    @Schema(description = "ID do Saldo", example = "1")
     private Long id;
 
-    @Schema(description = "Aluno associado ao saldo", required = false)
+    @Schema(description = "Aluno associado ao saldo")
     private UsuarioResponse aluno;
 
-    @Schema(description = "Quantidade de saldo disponível", example = "10", required = true)
+    @Schema(description = "Quantidade de saldo disponível", example = "10.0")
     private Double quantidade;
 
-    @Schema(description = "Serviço relacionado ao saldo", required = true)
+    @Schema(description = "Serviço relacionado ao saldo")
     private ServicoResponse servico;
 
     public SaldoResponse(Double quantidade, ServicoResponse servico) {
@@ -35,7 +33,21 @@ public class SaldoResponse {
         this.servico = servico;
     }
 
+    public Long getId() {
+        return id;
+    }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public UsuarioResponse getAluno() {
+        return aluno;
+    }
+
+    public void setAluno(UsuarioResponse aluno) {
+        this.aluno = aluno;
+    }
 
     public Double getQuantidade() {
         return quantidade;
@@ -51,13 +63,5 @@ public class SaldoResponse {
 
     public void setServico(ServicoResponse servico) {
         this.servico = servico;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public UsuarioResponse getAluno() {
-        return aluno;
     }
 }

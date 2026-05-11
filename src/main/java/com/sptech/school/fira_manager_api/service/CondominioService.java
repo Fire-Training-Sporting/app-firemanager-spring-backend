@@ -1,18 +1,14 @@
 package com.sptech.school.fira_manager_api.service;
 
-import com.sptech.school.fira_manager_api.dto.CondominioDTO;
+import com.sptech.school.fira_manager_api.dto.requests.condominio.CondominioRequest;
+import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
-import com.sun.net.httpserver.HttpsServer;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-
 
 @Service
 public class CondominioService {
@@ -23,35 +19,46 @@ public class CondominioService {
         this.condominioRepository = condominioRepository;
     }
 
+    private CondominioResponse toResponse(Condominio condominio) {
+        return new CondominioResponse(
+                condominio.getId(),
+                condominio.getNome(),
+                condominio.getCidade(),
+                condominio.getBairro(),
+                condominio.getRua(),
+                condominio.getNumero()
+        );
+    }
 
-    public Condominio adicionarNovoCondominio(CondominioDTO dto) {
+    public CondominioResponse adicionarNovoCondominio(CondominioRequest dto) {
         Condominio condominioNovo = new Condominio(dto.getNome(), dto.getCidade(), dto.getBairro(), dto.getRua(), dto.getNumero());
-        return condominioRepository.save(condominioNovo);
+        return toResponse(condominioRepository.save(condominioNovo));
     }
 
-    public List<Condominio> obterCondominios() {
-        List<Condominio> condominios = condominioRepository.findAll();
-
-        return condominios;
+    public List<CondominioResponse> obterCondominios() {
+        return condominioRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public Condominio atualizarCondominio(Long id, CondominioDTO dto) {
-        Condominio condominioNovo = condominioRepository.findById(id)
+    public CondominioResponse atualizarCondominio(Long id, CondominioRequest dto) {
+        Condominio condominio = condominioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O Condominio solicitado não existe."));
 
-        condominioNovo.setNome(dto.getNome());
-        condominioNovo.setCidade(dto.getCidade());
-        condominioNovo.setBairro(dto.getBairro());
-        condominioNovo.setRua(dto.getRua());
-        condominioNovo.setNumero(dto.getNumero());
+        condominio.setNome(dto.getNome());
+        condominio.setCidade(dto.getCidade());
+        condominio.setBairro(dto.getBairro());
+        condominio.setRua(dto.getRua());
+        condominio.setNumero(dto.getNumero());
 
-        return condominioRepository.save(condominioNovo);
-
+        return toResponse(condominioRepository.save(condominio));
     }
 
     public void deletarCondominio(Long id) {
-        if (!condominioRepository.existsById(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O Condominio não existe");
-
+        if (!condominioRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O Condominio não existe");
+        }
         condominioRepository.deleteById(id);
     }
 }

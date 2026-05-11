@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoDTO;
-import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteDTO;
-import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusDTO;
-import com.sptech.school.fira_manager_api.dto.responses.CondominioResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ProfessorResponse;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRequest;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
+import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
+import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.ProfessorResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.model.Condominio;
@@ -204,7 +204,7 @@ public class AgendamentoService {
         Long auxiliarId,
         Long servicoId,
         Long condominioId,
-        AgendamentoDTO dto)   
+        AgendamentoRequest dto)   
     {
         agendamento.setAluno(buscarUsuario(alunoId, "Aluno"));
         agendamento.setProfessor(buscarUsuario(professorId, "Professor"));
@@ -239,7 +239,7 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public AgendamentoResponse criarAgendamento(AgendamentoDTO dto) {
+    public AgendamentoResponse criarAgendamento(AgendamentoRequest dto) {
         Agendamento agendamento = new Agendamento();
 
         Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
@@ -272,7 +272,7 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public List<AgendamentoResponse> criarAgendamentoRecorrente(AgendamentoRecorrenteDTO dto) {
+    public List<AgendamentoResponse> criarAgendamentoRecorrente(AgendamentoRecorrenteRequest dto) {
         Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
         Double custo = calcularCustoSaldo(dto.getHoraInicio(), dto.getHoraFim());
         Double custoTotal = custo * dto.getQuantidadeRecorrencias();
@@ -331,7 +331,7 @@ public class AgendamentoService {
     }
 
 
-    public AgendamentoResponse atualizarAgendamentoPorId(AgendamentoDTO dto, Long id) {
+    public AgendamentoResponse atualizarAgendamentoPorId(AgendamentoRequest dto, Long id) {
         Agendamento agendamento = buscarAgendamento(id);
 
         if (!"pendente".equals(agendamento.getStatus())) {
@@ -399,7 +399,7 @@ public class AgendamentoService {
         }
     }
 
-    public AgendamentoResponse atualizarStatusAgendamentoPorId(Long id, AgendamentoStatusDTO dto) {
+    public AgendamentoResponse atualizarStatusAgendamentoPorId(Long id, AgendamentoStatusRequest dto) {
         Agendamento agendamento = buscarAgendamento(id);
 
         Saldo saldo = buscarSaldo(
