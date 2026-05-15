@@ -1,5 +1,6 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -238,6 +239,34 @@ public class AgendamentoService {
         return minutos / 60.0;
     }
 
+    private void validarConflitoProfessor(Long professorId, Long condominioId, LocalDate data, LocalTime horaInicio, LocalTime horaFim, Long agendamentoIdExcluir) {
+
+        List<Agendamento> agendamentosDoDia = agendamentoRepository
+                .findByProfessorIdAndDataAndStatusNot(professorId, data, "cancelado");
+
+        List<Agendamento> sobreposicao = agendamentosDoDia.stream()
+                .filter(existente -> agendamentoIdExcluir == null || !existente.getId().equals(agendamentoIdExcluir))
+                .filter(existente -> existente.getCondominio().getId().equals(condominioId))
+                .filter(existente -> horaInicio.isBefore(existente.getHoraFim()))
+                .filter(existente -> horaFim.isAfter(existente.getHoraInicio()))
+                .toList();
+
+        if (!sobreposicao.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Professor já possui um agendamento nesse horário");
+        }
+
+        List<Agendamento> conflitoIntervalo = agendamentosDoDia.stream()
+                .filter(existente -> agendamentoIdExcluir == null || !existente.getId().equals(agendamentoIdExcluir))
+                .filter(existente -> !existente.getCondominio().getId().equals(condominioId))
+                .filter(existente -> horaInicio.isBefore(existente.getHoraFim().plusHours(1)))
+                .filter(existente -> horaFim.isAfter(existente.getHoraInicio().minusHours(1)))
+                .toList();
+
+        if (!conflitoIntervalo.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Professor precisa de no mínimo 1h de intervalo entre condominios diferentes");
+        }
+    }
+
     @Transactional
     public AgendamentoResponse criarAgendamento(AgendamentoRequest dto) {
         Agendamento agendamento = new Agendamento();
@@ -248,6 +277,15 @@ public class AgendamentoService {
         if (saldo.getQuantidade() < custo) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
         }
+
+        validarConflitoProfessor(
+                dto.getProfessor(),
+                dto.getCondominio(),
+                dto.getData(),
+                dto.getHoraInicio(),
+                dto.getHoraFim(),
+                null
+        );
 
         preencherAgendamento(
                 agendamento,
@@ -290,6 +328,17 @@ public class AgendamentoService {
         List<AgendamentoResponse> agendamentosCriados = new ArrayList<>();
 
         for (int i = 0; i < quantidadeRecorrencias; i++) {
+            LocalDate dataRecorrente = dto.getData().plusDays(i * 7L);
+
+            validarConflitoProfessor(
+                    dto.getProfessor(),
+                    dto.getCondominio(),
+                    dataRecorrente,
+                    dto.getHoraInicio(),
+                    dto.getHoraFim(),
+                    null
+            );
+
             Agendamento agendamento = new Agendamento();
 
             preencherAgendamento(
@@ -302,7 +351,7 @@ public class AgendamentoService {
                     dto
             );
 
-            agendamento.setData(dto.getData().plusDays(i * 7L));
+            agendamento.setData(dataRecorrente);
             agendamento.setHoraFim(dto.getHoraFim());
 
             saldo.setQuantidade(saldo.getQuantidade() - custo);
