@@ -22,15 +22,20 @@ public class CondominioRequest {
     @Size(max = 100, message = "Bairro deve ter no máximo 100 caracteres")
     private String bairro;
 
-    @Schema(description = "Rua do Condomínio", example = "Rua Santo Antônio", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "Rua é obrigatória")
-    @Size(max = 150, message = "Rua deve ter no máximo 150 caracteres")
-    private String rua;
+    @Schema(description = "Logradouro do Condomínio", example = "Rua Santo Antônio", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "Logradouro é obrigatória")
+    @Size(max = 150, message = "Logradouro deve ter no máximo 150 caracteres")
+    private String logradouro;
 
     @Schema(description = "Número do Condomínio", example = "571", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "Número é obrigatório")
     @Size(max = 10, message = "Número deve ter no máximo 10 caracteres")
     private String numero;
+
+    @Schema(description = "Código de Endereçamento Postal", example = "09520650", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "CEP é obrigatório")
+    @Size(max = 8, message = "CEP deve ter no máximo 8 caracteres")
+    private String cep;
 
     public String getNome() {
         return nome;
@@ -56,12 +61,12 @@ public class CondominioRequest {
         this.bairro = bairro;
     }
 
-    public String getRua() {
-        return rua;
+    public String getLogradouro() {
+        return logradouro;
     }
 
-    public void setRua(String rua) {
-        this.rua = rua;
+    public void setLogradouro(String logradouro) {
+        this.logradouro = logradouro;
     }
 
     public String getNumero() {
@@ -70,5 +75,13 @@ public class CondominioRequest {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 }

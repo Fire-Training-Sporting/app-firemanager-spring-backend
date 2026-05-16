@@ -18,25 +18,29 @@ public class CondominioResponse {
     private String bairro;
 
     @Schema(description = "Rua do Condomínio", example = "Rua Santo Antônio")
-    private String rua;
+    private String logradouro;
 
     @Schema(description = "Número do Condomínio", example = "571")
     private String numero;
 
-    public CondominioResponse(Long id, String nome, String cidade, String bairro, String rua, String numero) {
+    @Schema(description = "Código de Endereçamento Postal", example = "09520650")
+    private String cep;
+
+    public CondominioResponse(Long id, String nome, String cidade, String bairro, String logradouro, String numero, String cep) {
         this.id = id;
         this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
-        this.rua = rua;
+        this.logradouro = logradouro;
         this.numero = numero;
+        this.cep = cep;
     }
 
-    public CondominioResponse(String nome, String cidade, String bairro, String rua, String numero) {
+    public CondominioResponse(String nome, String cidade, String bairro, String logradouro, String numero) {
         this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
-        this.rua = rua;
+        this.logradouro = logradouro;
         this.numero = numero;
     }
 
@@ -72,12 +76,12 @@ public class CondominioResponse {
         this.bairro = bairro;
     }
 
-    public String getRua() {
-        return rua;
+    public String getLogradouro() {
+        return logradouro;
     }
 
-    public void setRua(String rua) {
-        this.rua = rua;
+    public void setLogradouro(String logradouro) {
+        this.logradouro = logradouro;
     }
 
     public String getNumero() {
@@ -86,5 +90,13 @@ public class CondominioResponse {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 }
