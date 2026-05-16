@@ -108,7 +108,7 @@ public class AgendamentoService {
                 condominio.getNome(),
                 condominio.getCidade(),
                 condominio.getBairro(),
-                condominio.getRua(),
+                condominio.getLogradouro(),
                 condominio.getNumero()
         );
     }

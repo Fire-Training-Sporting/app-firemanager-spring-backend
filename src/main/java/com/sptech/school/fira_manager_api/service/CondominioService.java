@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.requests.condominio.CondominioRequest;
 import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
+import com.sptech.school.fira_manager_api.mapper.condominio.CondominioMapper;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import org.springframework.http.HttpStatus;
@@ -19,26 +20,15 @@ public class CondominioService {
         this.condominioRepository = condominioRepository;
     }
 
-    private CondominioResponse toResponse(Condominio condominio) {
-        return new CondominioResponse(
-                condominio.getId(),
-                condominio.getNome(),
-                condominio.getCidade(),
-                condominio.getBairro(),
-                condominio.getRua(),
-                condominio.getNumero()
-        );
-    }
-
     public CondominioResponse adicionarNovoCondominio(CondominioRequest dto) {
-        Condominio condominioNovo = new Condominio(dto.getNome(), dto.getCidade(), dto.getBairro(), dto.getRua(), dto.getNumero());
-        return toResponse(condominioRepository.save(condominioNovo));
+        Condominio condominioNovo = CondominioMapper.toEntity(dto);
+        return CondominioMapper.toResponse(condominioRepository.save(condominioNovo));
     }
 
     public List<CondominioResponse> obterCondominios() {
         return condominioRepository.findAll()
                 .stream()
-                .map(this::toResponse)
+                .map(CondominioMapper::toResponse)
                 .toList();
     }
 
@@ -49,10 +39,11 @@ public class CondominioService {
         condominio.setNome(dto.getNome());
         condominio.setCidade(dto.getCidade());
         condominio.setBairro(dto.getBairro());
-        condominio.setRua(dto.getRua());
+        condominio.setLogradouro(dto.getLogradouro());
         condominio.setNumero(dto.getNumero());
+        condominio.setCep(dto.getCep());
 
-        return toResponse(condominioRepository.save(condominio));
+        return CondominioMapper.toResponse(condominioRepository.save(condominio));
     }
 
     public void deletarCondominio(Long id) {
