@@ -144,10 +144,10 @@ public class SaldoService {
         List<ServicoProfessorResponse> listaServicos = servicos.stream().map(servico -> {
 
             Long aulasProfessor = agendamentoRepository
-                    .countByProfessorIdAndServicoIdAndStatus(id, servico.getId(), "concluido");
+                    .countByProfessorIdAndServicoIdAndStatus(id, servico.getId(), "finalizado");
 
             Long aulasAuxiliar = agendamentoRepository
-                    .countByAuxiliarIdAndServicoIdAndStatus(id, servico.getId(), "concluido");
+                    .countByAuxiliarIdAndServicoIdAndStatus(id, servico.getId(), "finalizado");
 
             return new ServicoProfessorResponse(
                     servico.getNome().toLowerCase(),

@@ -15,12 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
-import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
-import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.usuario.ProfessorResponse;
-import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.Saldo;
@@ -34,6 +29,7 @@ import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import com.sptech.school.fira_manager_api.repository.SaldoRepository;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
+import com.sptech.school.fira_manager_api.mapper.agendamento.AgendamentoMapper;
 
 
 @Service
@@ -55,113 +51,12 @@ public class AgendamentoService {
         this.emailService = emailService;
     }
 
-    private ProfessorResponse toProfessorResponse(Usuario usuario) {
-        if (usuario == null) {
-            return null;
-        }
-
-        return new ProfessorResponse(
-                usuario.getId(),
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getTelefone()
-        );
-    }
-
-    private ServicoResponse toServicoResponse(Servico servico) {
-        if (servico == null) {
-            return null;
-        }
-
-        return new ServicoResponse(
-                servico.getId(),
-                servico.getNome()
-        );
-    }
-
-    private SaldoResponse toSaldoResponse(Saldo saldo) {
-        if (saldo == null) {
-            return null;
-        }
-
-        return new SaldoResponse(
-                saldo.getQuantidade(),
-                toServicoResponse(saldo.getServico())
-        );
-    }
-
-    private UsuarioResponse toUsuarioResponse(Usuario usuario) {
-        if (usuario == null) return null;
-
-        return new UsuarioResponse(
-                usuario.getId(),
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getTelefone()
-        );
-    }
-
-    private CondominioResponse toCondomioResponse(Condominio condominio) {
-        if (condominio == null) return null;
-
-        return new CondominioResponse(
-                condominio.getNome(),
-                condominio.getCidade(),
-                condominio.getBairro(),
-                condominio.getLogradouro(),
-                condominio.getNumero()
-        );
-    }
-
     private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento) {
         Saldo saldo = saldoRepository
                 .findByAlunoIdAndServicoId(agendamento.getAluno().getId(), agendamento.getServico().getId())
                 .orElse(null);
 
-        return toAgendamentoResponse(agendamento, saldo);
-    }
-
-    private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento, Saldo saldo) {
-        ProfessorResponse professorResponse = toProfessorResponse(agendamento.getProfessor());
-        ServicoResponse servicoResponse = toServicoResponse(agendamento.getServico());
-        SaldoResponse saldoResponse = toSaldoResponse(saldo);
-        UsuarioResponse usuarioResponse = toUsuarioResponse(agendamento.getAluno());
-        CondominioResponse condominioResponse = toCondomioResponse(agendamento.getCondominio());
-
-        if (agendamento.getAuxiliar() != null) {
-            ProfessorResponse auxiliarResponse = toProfessorResponse(agendamento.getAuxiliar());
-
-            return new AgendamentoResponse(
-                    agendamento.getId(),
-                    usuarioResponse,
-                    saldoResponse,
-                    professorResponse,
-                    auxiliarResponse,
-                    servicoResponse,
-                    condominioResponse,
-                    agendamento.getData(),
-                    agendamento.getHoraInicio(),
-                    agendamento.getObservacao(),
-                    agendamento.getCriadoEm(),
-                    agendamento.getAtualizadoEm(),
-                    agendamento.getStatus()
-            );
-        }
-
-        return new AgendamentoResponse(
-                agendamento.getId(),
-                usuarioResponse,
-                saldoResponse,
-                professorResponse,
-                servicoResponse,
-                condominioResponse,
-                agendamento.getData(),
-                agendamento.getHoraInicio(),
-                agendamento.getObservacao(),
-                agendamento.getCriadoEm(),
-                agendamento.getAtualizadoEm(),
-                agendamento.getStatus()
-        );
+        return AgendamentoMapper.toResponse(agendamento, saldo);
     }
 
 
@@ -306,7 +201,7 @@ public class AgendamentoService {
 
         notificar(agendamento);
 
-        return toAgendamentoResponse(agendamento, saldo);
+        return AgendamentoMapper.toResponse(agendamento, saldo);
     }
 
     @Transactional
@@ -360,7 +255,7 @@ public class AgendamentoService {
 
             notificar(agendamento);
 
-            agendamentosCriados.add(toAgendamentoResponse(agendamento, saldo));
+            agendamentosCriados.add(AgendamentoMapper.toResponse(agendamento, saldo));
         }
 
         saldoRepository.save(saldo);
@@ -420,7 +315,7 @@ public class AgendamentoService {
 
         agendamento = agendamentoRepository.save(agendamento);
 
-        return toAgendamentoResponse(agendamento, saldo);
+        return AgendamentoMapper.toResponse(agendamento, saldo);
     }
     @Scheduled(fixedRate = 60000)
     @Transactional
@@ -513,6 +408,10 @@ public class AgendamentoService {
                 agendamento.getAluno().getId(),
                 agendamento.getServico().getId()
         );
+
+        if(agendamento.equals("confirmado") || agendamento.equals("finalizado")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Agendamento confirmado ou finalizado não pode ser deletado");
+        }
 
         Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
         saldo.setQuantidade(saldo.getQuantidade() + custoEstorno);
