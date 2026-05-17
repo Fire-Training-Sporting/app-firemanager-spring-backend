@@ -1,6 +1,7 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
+import com.sptech.school.fira_manager_api.mapper.servico.ServicoMapper;
 import com.sptech.school.fira_manager_api.model.Servico;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import org.springframework.http.HttpStatus;
@@ -18,21 +19,17 @@ public class ServicoService {
         this.servicoRepository = servicoRepository;
     }
 
-    private ServicoResponse toResponse(Servico servico) {
-        return new ServicoResponse(servico.getId(), servico.getNome(), servico.getAtivo());
-    }
-
     public List<ServicoResponse> buscarServicos() {
         return servicoRepository.findAll()
                 .stream()
-                .map(this::toResponse)
+                .map(ServicoMapper::toResponse)
                 .toList();
     }
 
     public ServicoResponse buscarServicoPorId(Long id) {
         Servico servico = servicoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O serviço não existe"));
-        return toResponse(servico);
+        return ServicoMapper.toResponse(servico);
     }
 
     public ServicoResponse atualizarAtividadePorId(Long id, Integer ativo) {
@@ -41,7 +38,7 @@ public class ServicoService {
 
         servico.setAtivo(ativo == 1);
 
-        return toResponse(servicoRepository.save(servico));
+        return ServicoMapper.toResponse(servicoRepository.save(servico));
     }
 
     public void deletarServicoPorId(Long id) {
