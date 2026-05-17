@@ -302,7 +302,27 @@ public class AgendamentoService {
             saldoRepository.save(saldoNovo);
 
             saldo = saldoNovo;
+        } else {
+            Double custoAntigo = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
+            Double custoNovo = calcularCustoSaldo(dto.getHoraInicio(), dto.getHoraFim());
+
+            if (!custoAntigo.equals(custoNovo)) {
+                Double novoSaldo = saldo.getQuantidade() + custoAntigo - custoNovo;
+                if (novoSaldo < 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente para o novo horário");
+                }
+                saldo.setQuantidade(novoSaldo);
+                saldoRepository.save(saldo);
+            }
         }
+        validarConflitoProfessor(
+                dto.getProfessor(),
+                dto.getCondominio(),
+                dto.getData(),
+                dto.getHoraInicio(),
+                dto.getHoraFim(),
+                agendamento.getId()
+        );
 
         agendamento.setAluno(buscarUsuario(dto.getAluno(), "Aluno"));
         agendamento.setProfessor(buscarUsuario(dto.getProfessor(), "Professor"));
@@ -311,6 +331,7 @@ public class AgendamentoService {
         agendamento.setServico(servicoNovo);
         agendamento.setData(dto.getData());
         agendamento.setHoraInicio(dto.getHoraInicio());
+        agendamento.setHoraFim(dto.getHoraFim());
         agendamento.setObservacao(dto.getObservacao());
 
         agendamento = agendamentoRepository.save(agendamento);
@@ -404,18 +425,18 @@ public class AgendamentoService {
     public void deletarAgendamentoPorId(Long id) {
         Agendamento agendamento = buscarAgendamento(id);
 
-        Saldo saldo = buscarSaldo(
-                agendamento.getAluno().getId(),
-                agendamento.getServico().getId()
-        );
-
-        if(agendamento.equals("confirmado") || agendamento.equals("finalizado")) {
+        if (agendamento.getStatus().equals("confirmado") || agendamento.getStatus().equals("finalizado")) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Agendamento confirmado ou finalizado não pode ser deletado");
         }
-
-        Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
-        saldo.setQuantidade(saldo.getQuantidade() + custoEstorno);
-        saldoRepository.save(saldo);
+        if (agendamento.getStatus().equals("pendente")) {
+            Saldo saldo = buscarSaldo(
+                    agendamento.getAluno().getId(),
+                    agendamento.getServico().getId()
+            );
+            Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
+            saldo.setQuantidade(saldo.getQuantidade() + custoEstorno);
+            saldoRepository.save(saldo);
+        }
 
         agendamentoRepository.deleteById(id);
     }
