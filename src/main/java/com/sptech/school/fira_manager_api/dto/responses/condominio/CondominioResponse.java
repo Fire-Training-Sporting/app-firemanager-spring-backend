@@ -1,7 +1,9 @@
 package com.sptech.school.fira_manager_api.dto.responses.condominio;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "CondominioResponse", description = "Dados de resposta de um Condomínio.")
 public class CondominioResponse {
 

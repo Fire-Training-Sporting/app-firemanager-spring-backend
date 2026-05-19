@@ -1,8 +1,13 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import com.sptech.school.fira_manager_api.dto.responses.saldoTransacoes.SaldoTransacaoResponse;
+import com.sptech.school.fira_manager_api.model.SaldoTransacao;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -18,6 +23,7 @@ import com.sptech.school.fira_manager_api.model.Servico;
 import com.sptech.school.fira_manager_api.model.Usuario;
 import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.SaldoRepository;
+import com.sptech.school.fira_manager_api.repository.SaldoTransacaoRepository;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
 
@@ -28,12 +34,14 @@ public class SaldoService {
     private final UsuarioRepository usuarioRepository;
     private final ServicoRepository servicoRepository;
     private final AgendamentoRepository agendamentoRepository;
+    private final SaldoTransacaoRepository saldoTransacaoRepository;
 
-    public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository, AgendamentoRepository agendamentoRepository) {
+    public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository, AgendamentoRepository agendamentoRepository, SaldoTransacaoRepository saldoTransacaoRepository) {
         this.saldoRepository = saldoRepository;
         this.usuarioRepository = usuarioRepository;
         this.servicoRepository = servicoRepository;
         this.agendamentoRepository = agendamentoRepository;
+        this.saldoTransacaoRepository = saldoTransacaoRepository;
     }
 
 
@@ -58,36 +66,78 @@ public class SaldoService {
         );
     }
 
+    private SaldoTransacaoResponse toSaldoTransacaoResponse(SaldoTransacao t) {
+        return new SaldoTransacaoResponse(
+                t.getId(),
+                t.getQuantidadeOriginal(),
+                t.getQuantidadeRestante(),
+                t.getDataExpiracao(),
+                t.getCriadoEm()
+        );
+    }
+
+
     private SaldoResponse toSaldoResponse(Saldo saldo) {
-        if (saldo == null) {
-            return null;
-        }
+        if (saldo == null) return null;
+
+        List<SaldoTransacaoResponse> lotes = saldoTransacaoRepository
+                .findBySaldoIdAndQuantidadeRestanteGreaterThanAndDataExpiracaoGreaterThanEqualOrderByDataExpiracaoAsc(
+                        saldo.getId(), 0.0, LocalDate.now())
+                .stream()
+                .map(this::toSaldoTransacaoResponse)
+                .toList();
 
         return new SaldoResponse(
                 saldo.getId(),
                 toUsuarioResponse(saldo.getAluno()),
                 saldo.getQuantidade(),
-                toServicoResponse(saldo.getServico())
+                toServicoResponse(saldo.getServico()),
+                lotes
         );
     }
 
+    private void adicionarLote(Saldo saldo, Double quantidade) {
+        LocalDate hoje = LocalDate.now();
+        SaldoTransacao transacao = new SaldoTransacao(saldo, quantidade, hoje.plusMonths(3), hoje);
+        saldoTransacaoRepository.save(transacao);
+        saldo.setQuantidade(saldo.getQuantidade() + quantidade);
+        saldoRepository.save(saldo);
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void expirarSaldos() {
+        List<SaldoTransacao> expiradas = saldoTransacaoRepository
+                .findByDataExpiracaoBeforeAndQuantidadeRestanteGreaterThan(LocalDate.now(), 0.0);
+
+        for (SaldoTransacao transacao : expiradas) {
+            Saldo saldo = transacao.getSaldo();
+            saldo.setQuantidade(Math.max(0.0, saldo.getQuantidade() - transacao.getQuantidadeRestante()));
+            transacao.setQuantidadeRestante(0.0);
+            saldoTransacaoRepository.save(transacao);
+            saldoRepository.save(saldo);
+        }
+    }
 
     public SaldoResponse criarSaldo(SaldoRequest dto) {
-        Saldo saldoNovo = new Saldo();
-
         Usuario saldoUsuario = usuarioRepository.findById(dto.getAluno())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
-        saldoNovo.setAluno(saldoUsuario);
 
         Servico servicoSaldo = servicoRepository.findById(dto.getServico())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
-        saldoNovo.setServico(servicoSaldo);
 
-        saldoNovo.setQuantidade(dto.getQuantidade());
+        Saldo saldo = saldoRepository.findByAlunoIdAndServicoId(dto.getAluno(), dto.getServico())
+                .orElseGet(() -> {
+                    Saldo novo = new Saldo();
+                    novo.setAluno(saldoUsuario);
+                    novo.setServico(servicoSaldo);
+                    novo.setQuantidade(0.0);
+                    return saldoRepository.save(novo);
+                });
 
-        saldoNovo = saldoRepository.save(saldoNovo);
+        adicionarLote(saldo, dto.getQuantidade());
 
-        return toSaldoResponse(saldoNovo);
+        return toSaldoResponse(saldo);
     }
 
     public List<SaldoResponse> listarSaldos() {
@@ -105,22 +155,17 @@ public class SaldoService {
     }
 
     public SaldoResponse atualizarSaldoPorId(SaldoRequest dto, Long id) {
-        Saldo saldoNovo = saldoRepository.findById(id)
+        Saldo saldo = saldoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
 
-        Usuario saldoUsuario = usuarioRepository.findById(dto.getAluno())
+        usuarioRepository.findById(dto.getAluno())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
-        saldoNovo.setAluno(saldoUsuario);
-
-        Servico servicoSaldo = servicoRepository.findById(dto.getServico())
+        servicoRepository.findById(dto.getServico())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
-        saldoNovo.setServico(servicoSaldo);
 
-        saldoNovo.setQuantidade(dto.getQuantidade());
+        adicionarLote(saldo, dto.getQuantidade());
 
-        saldoNovo = saldoRepository.save(saldoNovo);
-
-        return toSaldoResponse(saldoNovo);
+        return toSaldoResponse(saldo);
     }
 
     public void deletarSaldoPorId(Long id) {

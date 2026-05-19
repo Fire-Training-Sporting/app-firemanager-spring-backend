@@ -42,6 +42,10 @@ public class Agendamento {
     private Usuario auxiliar;
 
     @ManyToOne
+    @JoinColumn(name = "fk_rebatedor", nullable = true)
+    private Usuario rebatedor;
+
+    @ManyToOne
     @JoinColumn(name = "fk_servico", nullable = false)
     private Servico servico;
 
@@ -145,6 +149,14 @@ public class Agendamento {
 
     public void setAuxiliar(Usuario auxiliar) {
         this.auxiliar = auxiliar;
+    }
+
+    public Usuario getRebatedor() {
+        return rebatedor;
+    }
+
+    public void setRebatedor(Usuario rebatedor) {
+        this.rebatedor = rebatedor;
     }
 
     public Servico getServico() {

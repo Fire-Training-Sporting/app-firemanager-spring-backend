@@ -20,6 +20,9 @@ public class AgendamentoRequest {
     @Schema(description = "ID do auxiliar (opcional)", example = "3")
     private Long auxiliar;
 
+    @Schema(description = "ID do rebatedor (opcional)", example = "4")
+    private Long rebatedor;
+
     @Schema(description = "ID do serviço", example = "5")
     @NotNull(message = "ID do serviço é obrigatório")
     private Long servico;
@@ -65,6 +68,14 @@ public class AgendamentoRequest {
 
     public void setAuxiliar(Long auxiliar) {
         this.auxiliar = auxiliar;
+    }
+
+    public Long getRebatedor() {
+        return rebatedor;
+    }
+
+    public void setRebatedor(Long rebatedor) {
+        this.rebatedor = rebatedor;
     }
 
     public Long getServico() {
