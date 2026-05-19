@@ -67,39 +67,25 @@ public class AgendamentoMapper {
         UsuarioResponse usuarioResponse = toUsuarioResponse(agendamento.getAluno());
         CondominioResponse condominioResponse = toCondominioResponse(agendamento.getCondominio());
 
-        if (agendamento.getAuxiliar() != null) {
-            ProfessorResponse auxiliarResponse = toProfessorResponse(agendamento.getAuxiliar());
-
-            return new AgendamentoResponse(
-                    agendamento.getId(),
-                    usuarioResponse,
-                    saldoResponse,
-                    professorResponse,
-                    auxiliarResponse,
-                    servicoResponse,
-                    condominioResponse,
-                    agendamento.getData(),
-                    agendamento.getHoraInicio(),
-                    agendamento.getObservacao(),
-                    agendamento.getCriadoEm(),
-                    agendamento.getAtualizadoEm(),
-                    agendamento.getStatus()
-            );
-        }
-
-        return new AgendamentoResponse(
+        AgendamentoResponse response = new AgendamentoResponse(
                 agendamento.getId(),
                 usuarioResponse,
                 saldoResponse,
                 professorResponse,
+                toProfessorResponse(agendamento.getAuxiliar()),
                 servicoResponse,
                 condominioResponse,
                 agendamento.getData(),
                 agendamento.getHoraInicio(),
+                agendamento.getHoraFim(),
                 agendamento.getObservacao(),
                 agendamento.getCriadoEm(),
                 agendamento.getAtualizadoEm(),
                 agendamento.getStatus()
         );
+
+        response.setRebatedor(toProfessorResponse(agendamento.getRebatedor()));
+
+        return response;
     }
 }

@@ -32,6 +32,8 @@ class AgendamentoServiceTest {
     @Mock private CondominioRepository condominioRepository;
     @Mock private ServicoRepository servicoRepository;
     @Mock private SaldoRepository saldoRepository;
+    @Mock private SaldoTransacaoRepository saldoTransacaoRepository;
+    @Mock private EmailService emailService;
 
     @InjectMocks
     private AgendamentoService agendamentoService;
@@ -185,6 +187,44 @@ class AgendamentoServiceTest {
             assertNotNull(response);
             assertNotNull(response.getAuxiliar());
             assertEquals("Carlos Mendes", response.getAuxiliar().getNome());
+        }
+
+        @Test
+        @DisplayName("Criar Agendamento com Rebatedor com Sucesso")
+        void criarAgendamentoComRebatedorComSucesso() {
+            Usuario aluno = criarAluno();
+            Usuario professor = criarProfessor();
+            Usuario rebatedor = new Usuario();
+            rebatedor.setId(4L);
+            rebatedor.setNome("Robson Rebatedor");
+            rebatedor.setEmail("robson@gmail.com");
+            rebatedor.setTelefone("11966665555");
+            Servico servico = criarServico();
+            Condominio condominio = criarCondominio();
+            Saldo saldo = criarSaldo(aluno, servico, 5.0);
+
+            Agendamento agendamentoSalvo = criarAgendamentoSalvo(aluno, professor, servico, condominio);
+            agendamentoSalvo.setRebatedor(rebatedor);
+
+            AgendamentoRequest request = criarRequest();
+            request.setRebatedor(4L);
+
+            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
+            when(agendamentoRepository.findByProfessorIdAndDataAndStatusNot(eq(2L), any(LocalDate.class), eq("cancelado")))
+                    .thenReturn(List.of());
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(aluno));
+            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(professor));
+            when(usuarioRepository.findById(4L)).thenReturn(Optional.of(rebatedor));
+            when(servicoRepository.findById(1L)).thenReturn(Optional.of(servico));
+            when(condominioRepository.findById(1L)).thenReturn(Optional.of(condominio));
+            when(saldoRepository.save(any(Saldo.class))).thenReturn(saldo);
+            when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamentoSalvo);
+
+            AgendamentoResponse response = agendamentoService.criarAgendamento(request);
+
+            assertNotNull(response);
+            assertNotNull(response.getRebatedor());
+            assertEquals("Robson Rebatedor", response.getRebatedor().getNome());
         }
 
         @Test

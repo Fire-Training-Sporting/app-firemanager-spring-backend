@@ -9,6 +9,7 @@ import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
 import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.SaldoRepository;
+import com.sptech.school.fira_manager_api.repository.SaldoTransacaoRepository;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -34,9 +35,39 @@ class SaldoServiceTest {
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private ServicoRepository servicoRepository;
     @Mock private AgendamentoRepository agendamentoRepository;
+    @Mock private SaldoTransacaoRepository saldoTransacaoRepository;
 
     @InjectMocks
     private SaldoService saldoService;
+
+    private Usuario criarAluno() {
+        TipoUsuario tipo = new TipoUsuario();
+        tipo.setId(4L);
+        tipo.setCargo("aluno");
+        Usuario aluno = new Usuario();
+        aluno.setId(1L);
+        aluno.setNome("João Silva");
+        aluno.setEmail("joao@gmail.com");
+        aluno.setTelefone("11912345678");
+        aluno.setTipoUsuario(tipo);
+        return aluno;
+    }
+
+    private Servico criarServico() {
+        Servico servico = new Servico();
+        servico.setId(1L);
+        servico.setNome("Tênis");
+        return servico;
+    }
+
+    private Saldo criarSaldo(Usuario aluno, Servico servico, Double quantidade) {
+        Saldo saldo = new Saldo();
+        saldo.setId(1L);
+        saldo.setAluno(aluno);
+        saldo.setServico(servico);
+        saldo.setQuantidade(quantidade);
+        return saldo;
+    }
 
     @Nested
     class CriarSaldo {
@@ -49,30 +80,15 @@ class SaldoServiceTest {
             request.setServico(1L);
             request.setQuantidade(10.0);
 
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(4L);
-            tipo.setCargo("aluno");
+            Usuario aluno = criarAluno();
+            Servico servico = criarServico();
 
-            Usuario aluno = new Usuario();
-            aluno.setId(1L);
-            aluno.setNome("João Silva");
-            aluno.setEmail("joao@gmail.com");
-            aluno.setTelefone("11912345678");
-            aluno.setTipoUsuario(tipo);
-
-            Servico servico = new Servico();
-            servico.setId(1L);
-            servico.setNome("Tênis");
-
-            Saldo saldoSalvo = new Saldo();
-            saldoSalvo.setId(1L);
-            saldoSalvo.setAluno(aluno);
-            saldoSalvo.setServico(servico);
-            saldoSalvo.setQuantidade(10.0);
+            Saldo saldoNovo = criarSaldo(aluno, servico, 0.0);
 
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(aluno));
             when(servicoRepository.findById(1L)).thenReturn(Optional.of(servico));
-            when(saldoRepository.save(any(Saldo.class))).thenReturn(saldoSalvo);
+            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.empty());
+            when(saldoRepository.save(any(Saldo.class))).thenReturn(saldoNovo);
 
             SaldoResponse response = saldoService.criarSaldo(request);
 
@@ -105,16 +121,7 @@ class SaldoServiceTest {
             request.setServico(99L);
             request.setQuantidade(10.0);
 
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(4L);
-            tipo.setCargo("aluno");
-
-            Usuario aluno = new Usuario();
-            aluno.setId(1L);
-            aluno.setNome("Pietrão Phineas");
-            aluno.setEmail("Pietrao@gmail.com");
-            aluno.setTelefone("11912345678");
-            aluno.setTipoUsuario(tipo);
+            Usuario aluno = criarAluno();
 
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(aluno));
             when(servicoRepository.findById(99L)).thenReturn(Optional.empty());
@@ -132,32 +139,12 @@ class SaldoServiceTest {
         @Test
         @DisplayName("Listar Todos os Saldos")
         void listarTodosSaldos() {
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(4L);
-            tipo.setCargo("aluno");
+            Usuario aluno = criarAluno();
+            Servico servico = criarServico();
 
-            Usuario aluno = new Usuario();
-            aluno.setId(1L);
-            aluno.setNome("João Silva");
-            aluno.setEmail("joao@gmail.com");
-            aluno.setTelefone("11912345678");
-            aluno.setTipoUsuario(tipo);
-
-            Servico servico = new Servico();
-            servico.setId(1L);
-            servico.setNome("Tênis");
-
-            Saldo saldo1 = new Saldo();
-            saldo1.setId(1L);
-            saldo1.setAluno(aluno);
-            saldo1.setServico(servico);
-            saldo1.setQuantidade(10.0);
-
-            Saldo saldo2 = new Saldo();
+            Saldo saldo1 = criarSaldo(aluno, servico, 10.0);
+            Saldo saldo2 = criarSaldo(aluno, servico, 5.0);
             saldo2.setId(2L);
-            saldo2.setAluno(aluno);
-            saldo2.setServico(servico);
-            saldo2.setQuantidade(5.0);
 
             when(saldoRepository.findAll()).thenReturn(List.of(saldo1, saldo2));
 
@@ -170,26 +157,9 @@ class SaldoServiceTest {
         @Test
         @DisplayName("Listar Saldo por ID com Sucesso")
         void listarSaldoPorId() {
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(4L);
-            tipo.setCargo("aluno");
-
-            Usuario aluno = new Usuario();
-            aluno.setId(1L);
-            aluno.setNome("João Silva");
-            aluno.setEmail("joao@gmail.com");
-            aluno.setTelefone("11912345678");
-            aluno.setTipoUsuario(tipo);
-
-            Servico servico = new Servico();
-            servico.setId(1L);
-            servico.setNome("Tênis");
-
-            Saldo saldo = new Saldo();
-            saldo.setId(1L);
-            saldo.setAluno(aluno);
-            saldo.setServico(servico);
-            saldo.setQuantidade(10.0);
+            Usuario aluno = criarAluno();
+            Servico servico = criarServico();
+            Saldo saldo = criarSaldo(aluno, servico, 10.0);
 
             when(saldoRepository.findById(1L)).thenReturn(Optional.of(saldo));
 
@@ -216,49 +186,27 @@ class SaldoServiceTest {
     class AtualizarSaldo {
 
         @Test
-        @DisplayName("Atualizar Saldo com Sucesso")
+        @DisplayName("Atualizar Saldo com Sucesso - Adiciona novo lote (10 existente + 20 novo = 30)")
         void atualizarSaldoComSucesso() {
             SaldoRequest request = new SaldoRequest();
             request.setAluno(1L);
             request.setServico(1L);
             request.setQuantidade(20.0);
 
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(4L);
-            tipo.setCargo("aluno");
+            Usuario aluno = criarAluno();
+            Servico servico = criarServico();
 
-            Usuario aluno = new Usuario();
-            aluno.setId(1L);
-            aluno.setNome("João Silva");
-            aluno.setEmail("joao@gmail.com");
-            aluno.setTelefone("11912345678");
-            aluno.setTipoUsuario(tipo);
-
-            Servico servico = new Servico();
-            servico.setId(1L);
-            servico.setNome("Tênis");
-
-            Saldo saldoExistente = new Saldo();
-            saldoExistente.setId(1L);
-            saldoExistente.setAluno(aluno);
-            saldoExistente.setServico(servico);
-            saldoExistente.setQuantidade(10.0);
-
-            Saldo saldoAtualizado = new Saldo();
-            saldoAtualizado.setId(1L);
-            saldoAtualizado.setAluno(aluno);
-            saldoAtualizado.setServico(servico);
-            saldoAtualizado.setQuantidade(20.0);
+            Saldo saldoExistente = criarSaldo(aluno, servico, 10.0);
 
             when(saldoRepository.findById(1L)).thenReturn(Optional.of(saldoExistente));
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(aluno));
             when(servicoRepository.findById(1L)).thenReturn(Optional.of(servico));
-            when(saldoRepository.save(any(Saldo.class))).thenReturn(saldoAtualizado);
+            when(saldoRepository.save(any(Saldo.class))).thenReturn(saldoExistente);
 
             SaldoResponse response = saldoService.atualizarSaldoPorId(request, 1L);
 
             assertNotNull(response);
-            assertEquals(20.0, response.getQuantidade());
+            assertEquals(30.0, response.getQuantidade());
         }
 
         @Test
@@ -305,17 +253,7 @@ class SaldoServiceTest {
             request.setServico(99L);
             request.setQuantidade(20.0);
 
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(4L);
-            tipo.setCargo("aluno");
-
-            Usuario aluno = new Usuario();
-            aluno.setId(1L);
-            aluno.setNome("João Silva");
-            aluno.setEmail("joao@gmail.com");
-            aluno.setTelefone("11912345678");
-            aluno.setTipoUsuario(tipo);
-
+            Usuario aluno = criarAluno();
             Saldo saldoExistente = new Saldo();
             saldoExistente.setId(1L);
 
@@ -355,6 +293,50 @@ class SaldoServiceTest {
     }
 
     @Nested
+    class ExpirarSaldos {
+
+        @Test
+        @DisplayName("Expirar Saldos - Lotes expirados são zerados")
+        void expirarSaldosComSucesso() {
+            Usuario aluno = criarAluno();
+            Servico servico = criarServico();
+            Saldo saldo = criarSaldo(aluno, servico, 10.0);
+
+            com.sptech.school.fira_manager_api.model.SaldoTransacao transacao =
+                    new com.sptech.school.fira_manager_api.model.SaldoTransacao(
+                            saldo, 10.0,
+                            java.time.LocalDate.now().minusDays(1),
+                            java.time.LocalDate.now().minusMonths(3)
+                    );
+
+            when(saldoTransacaoRepository
+                    .findByDataExpiracaoBeforeAndQuantidadeRestanteGreaterThan(
+                            any(java.time.LocalDate.class), eq(0.0)))
+                    .thenReturn(List.of(transacao));
+
+            saldoService.expirarSaldos();
+
+            verify(saldoTransacaoRepository).save(transacao);
+            verify(saldoRepository).save(saldo);
+            assertEquals(0.0, transacao.getQuantidadeRestante());
+        }
+
+        @Test
+        @DisplayName("Expirar Saldos - Sem lotes expirados")
+        void expirarSaldosSemLotesExpirados() {
+            when(saldoTransacaoRepository
+                    .findByDataExpiracaoBeforeAndQuantidadeRestanteGreaterThan(
+                            any(java.time.LocalDate.class), eq(0.0)))
+                    .thenReturn(List.of());
+
+            saldoService.expirarSaldos();
+
+            verify(saldoTransacaoRepository, never()).save(any());
+            verify(saldoRepository, never()).save(any());
+        }
+    }
+
+    @Nested
     class BuscarSaldoProfessor {
 
         @Test
@@ -371,9 +353,7 @@ class SaldoServiceTest {
             professor.setTelefone("11988887777");
             professor.setTipoUsuario(tipo);
 
-            Servico servico = new Servico();
-            servico.setId(1L);
-            servico.setNome("tênis");
+            Servico servico = criarServico();
 
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(professor));
             when(servicoRepository.findAll()).thenReturn(List.of(servico));
@@ -383,7 +363,7 @@ class SaldoServiceTest {
             ProfessorSaldoResponse response = saldoService.buscarSaldoProfessorPorId(1L);
 
             assertNotNull(response);
-            assertEquals("Luan Souza", response.getProfessor().getNome());
+            assertEquals("Luan Mãe solteira", response.getProfessor().getNome());
             assertEquals(1, response.getServicos().size());
             assertEquals(3, response.getAulasComoProfessor());
             assertEquals(1, response.getAulasComoAuxiliar());
@@ -408,11 +388,7 @@ class SaldoServiceTest {
             tipo.setId(4L);
             tipo.setCargo("aluno");
 
-            Usuario aluno = new Usuario();
-            aluno.setId(1L);
-            aluno.setNome("João Silva");
-            aluno.setEmail("joao@gmail.com");
-            aluno.setTelefone("11912345678");
+            Usuario aluno = criarAluno();
             aluno.setTipoUsuario(tipo);
 
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(aluno));
