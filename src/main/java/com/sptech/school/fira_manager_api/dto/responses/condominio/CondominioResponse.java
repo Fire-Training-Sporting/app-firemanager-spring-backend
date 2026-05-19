@@ -1,60 +1,49 @@
-package com.sptech.school.fira_manager_api.model;
+package com.sptech.school.fira_manager_api.dto.responses.condominio;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@Entity
-@Table(name = "tb_condominios")
-public class Condominio {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@Schema(name = "CondominioResponse", description = "Dados de resposta de um Condomínio.")
+public class CondominioResponse {
 
-    @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @Schema(description = "ID do Condomínio", example = "1")
     private Long id;
 
-    @Column(nullable = false)
+    @Schema(description = "Nome do Condomínio", example = "Condomínio LIV")
     private String nome;
 
-    @Column(nullable = false)
+    @Schema(description = "Cidade do Condomínio", example = "São Paulo")
     private String cidade;
 
-    @Column(nullable = false)
+    @Schema(description = "Bairro do Condomínio", example = "São Miguel Paulista")
     private String bairro;
 
-    @Column(nullable = false)
+    @Schema(description = "Rua do Condomínio", example = "Rua Santo Antônio")
     private String logradouro;
 
-    @Column(nullable = false)
+    @Schema(description = "Número do Condomínio", example = "571")
     private String numero;
 
-    @Column (nullable = false)
+    @Schema(description = "Código de Endereçamento Postal", example = "09520650")
     private String cep;
 
-    public Condominio() {
-    }
-
-    public Condominio(Long id, String cidade, String bairro, String logradouro, String numero) {
+    public CondominioResponse(Long id, String nome, String cidade, String bairro, String logradouro, String numero, String cep) {
         this.id = id;
-        this.cidade = cidade;
-        this.bairro = bairro;
-        this.logradouro = logradouro;
-        this.numero = numero;
-    }
-
-    public Condominio(String nome, String cidade, String bairro, String logradouro, String numero) {
-        this.nome = nome;
-        this.cidade = cidade;
-        this.bairro = bairro;
-        this.logradouro = logradouro;
-        this.numero = numero;
-    }
-
-    public Condominio(String nome, String cidade, String bairro, String logradouro, String numero, String cep) {
         this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
         this.logradouro = logradouro;
         this.numero = numero;
         this.cep = cep;
+    }
+
+    public CondominioResponse(String nome, String cidade, String bairro, String logradouro, String numero) {
+        this.nome = nome;
+        this.cidade = cidade;
+        this.bairro = bairro;
+        this.logradouro = logradouro;
+        this.numero = numero;
     }
 
     public Long getId() {

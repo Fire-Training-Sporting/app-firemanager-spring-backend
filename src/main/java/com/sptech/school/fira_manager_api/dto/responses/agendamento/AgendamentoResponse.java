@@ -7,10 +7,10 @@ import java.time.LocalTime;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.sptech.school.fira_manager_api.dto.responses.CondominioResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ProfessorResponse;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.ProfessorResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,14 +18,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonPropertyOrder({
         "id",
         "aluno",
+        "saldo",
         "professor",
         "auxiliar",
-        "status",
+        "rebatedor",
         "servico",
-        "saldo",
+        "condominio",
         "data",
         "horaInicio",
-        "observacao"
+        "horaFim",
+        "status",
+        "observacao",
+        "criadoEm",
+        "atualizadoEm"
 })
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -48,6 +53,9 @@ public class AgendamentoResponse {
     @Schema(description = "Professor auxiliar do Agendamento", required = false)
     private ProfessorResponse auxiliar;
 
+    @Schema(description = "Rebatedor do Agendamento", required = false)
+    private ProfessorResponse rebatedor;
+
     @Schema(description = "Serviço do Agendamento", required = true)
     private ServicoResponse servico;
 
@@ -59,6 +67,9 @@ public class AgendamentoResponse {
 
     @Schema(description = "Hora de início do Agendamento", example = "10:00:00", required = true)
     private LocalTime horaInicio;
+
+    @Schema(description = "Hora de fim do Agendamento", example = "11:00:00", required = true)
+    private LocalTime horaFim;
 
     @Schema(description = "Status do Agendamento", example = "pendente", required = true)
     private String status;
@@ -77,7 +88,7 @@ public class AgendamentoResponse {
     public AgendamentoResponse() {
     }
 
-    public AgendamentoResponse(Long id, UsuarioResponse aluno,SaldoResponse saldo, ProfessorResponse professor, ProfessorResponse auxiliar, ServicoResponse servico, CondominioResponse condominio, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
+    public AgendamentoResponse(Long id, UsuarioResponse aluno, SaldoResponse saldo, ProfessorResponse professor, ProfessorResponse auxiliar, ServicoResponse servico, CondominioResponse condominio, LocalDate data, LocalTime horaInicio, LocalTime horaFim, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
         this.id = id;
         this.aluno = aluno;
         this.saldo = saldo;
@@ -87,13 +98,14 @@ public class AgendamentoResponse {
         this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.observacao = observacao;
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
         this.status = status;
     }
 
-    public AgendamentoResponse(Long id, UsuarioResponse aluno,SaldoResponse saldo, ProfessorResponse professor, ServicoResponse servico,CondominioResponse condominio, LocalDate data, LocalTime horaInicio, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
+    public AgendamentoResponse(Long id, UsuarioResponse aluno, SaldoResponse saldo, ProfessorResponse professor, ServicoResponse servico, CondominioResponse condominio, LocalDate data, LocalTime horaInicio, LocalTime horaFim, String observacao, LocalDateTime criadoEm, LocalDateTime atualizadoEm, String status) {
         this.id = id;
         this.aluno = aluno;
         this.saldo = saldo;
@@ -102,6 +114,7 @@ public class AgendamentoResponse {
         this.condominio = condominio;
         this.data = data;
         this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.observacao = observacao;
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
@@ -140,6 +153,14 @@ public class AgendamentoResponse {
         this.auxiliar = auxiliar;
     }
 
+    public ProfessorResponse getRebatedor() {
+        return rebatedor;
+    }
+
+    public void setRebatedor(ProfessorResponse rebatedor) {
+        this.rebatedor = rebatedor;
+    }
+
     public ServicoResponse getServico() {
         return servico;
     }
@@ -162,6 +183,14 @@ public class AgendamentoResponse {
 
     public void setHoraInicio(LocalTime horaInicio) {
         this.horaInicio = horaInicio;
+    }
+
+    public LocalTime getHoraFim() {
+        return horaFim;
+    }
+
+    public void setHoraFim(LocalTime horaFim) {
+        this.horaFim = horaFim;
     }
 
     public String getObservacao() {

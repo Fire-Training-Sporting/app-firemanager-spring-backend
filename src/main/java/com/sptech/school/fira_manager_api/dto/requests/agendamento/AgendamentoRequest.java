@@ -6,8 +6,8 @@ import java.time.LocalTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
-@Schema(description = "DTO para criação e atualização de agendamentos")
-public class AgendamentoDTO {
+@Schema(name = "AgendamentoRequest", description = "Payload para criação e atualização de agendamentos.")
+public class AgendamentoRequest {
 
     @Schema(description = "ID do aluno", example = "1")
     @NotNull(message = "ID do aluno é obrigatório")
@@ -17,8 +17,11 @@ public class AgendamentoDTO {
     @NotNull(message = "ID do professor é obrigatório")
     private Long professor;
 
-    @Schema(description = "ID do auxiliar (opcional)", example = "3", nullable = true)
+    @Schema(description = "ID do auxiliar (opcional)", example = "3")
     private Long auxiliar;
+
+    @Schema(description = "ID do rebatedor (opcional)", example = "4")
+    private Long rebatedor;
 
     @Schema(description = "ID do serviço", example = "5")
     @NotNull(message = "ID do serviço é obrigatório")
@@ -36,13 +39,12 @@ public class AgendamentoDTO {
     @NotNull(message = "Hora de início é obrigatória")
     private LocalTime horaInicio;
 
-    @Schema(description = "Hora de fim do agendamento", example = "15:30:00", nullable = true)
+    @Schema(description = "Hora de fim do agendamento", example = "15:30:00")
     @NotNull(message = "Hora de fim é obrigatória")
     private LocalTime horaFim;
 
-    @Schema(description = "Observações adicionais", example = "Aluno prefere atendimento rápido", nullable = true)
+    @Schema(description = "Observações adicionais", example = "Aluno prefere atendimento rápido")
     private String observacao;
-
 
     public Long getAluno() {
         return aluno;
@@ -66,6 +68,14 @@ public class AgendamentoDTO {
 
     public void setAuxiliar(Long auxiliar) {
         this.auxiliar = auxiliar;
+    }
+
+    public Long getRebatedor() {
+        return rebatedor;
+    }
+
+    public void setRebatedor(Long rebatedor) {
+        this.rebatedor = rebatedor;
     }
 
     public Long getServico() {
@@ -100,19 +110,19 @@ public class AgendamentoDTO {
         this.horaInicio = horaInicio;
     }
 
-    public String getObservacao() {
-        return observacao;
-    }
-
-    public void setObservacao(String observacao) {
-        this.observacao = observacao;
-    }
-
     public LocalTime getHoraFim() {
         return horaFim;
     }
 
     public void setHoraFim(LocalTime horaFim) {
         this.horaFim = horaFim;
+    }
+
+    public String getObservacao() {
+        return observacao;
+    }
+
+    public void setObservacao(String observacao) {
+        this.observacao = observacao;
     }
 }
