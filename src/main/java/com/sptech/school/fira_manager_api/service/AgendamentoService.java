@@ -371,7 +371,8 @@ public class AgendamentoService {
 
         return AgendamentoMapper.toResponse(agendamento, saldo);
     }
-    @Scheduled(fixedRate = 60000)
+
+    @Scheduled(fixedRate = 600000)
     @Transactional
     public void confirmarAgendamentosAutomaticamente() {
         List<Agendamento> agendamentos = agendamentoRepository.findByStatusIn(List.of("pendente"));
@@ -386,7 +387,7 @@ public class AgendamentoService {
 
             LocalDateTime limiteConfirmacao = dataHoraAgendamento.minusHours(24);
 
-            if (!agora.isBefore(limiteConfirmacao)) {
+            if (!agora.isBefore(limiteConfirmacao) && agora.isBefore(dataHoraAgendamento)) {
                 agendamento.setStatus("confirmado");
                 agendamento.setAtualizadoEm(agora);
 
