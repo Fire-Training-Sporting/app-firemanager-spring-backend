@@ -770,14 +770,18 @@ class AgendamentoServiceTest {
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
 
-            // Data no passado → limite de confirmação já passou → confirma
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
-            agendamento.setData(LocalDate.now().minusDays(1));
-            agendamento.setHoraInicio(LocalTime.of(10, 0));
+
+            // Dentro das próximas 24h
+            agendamento.setData(LocalDate.now());
+            agendamento.setHoraInicio(LocalTime.now().plusHours(2));
             agendamento.setStatus("pendente");
 
-            when(agendamentoRepository.findByStatusIn(List.of("pendente"))).thenReturn(List.of(agendamento));
-            when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamento);
+            when(agendamentoRepository.findByStatusIn(List.of("pendente")))
+                    .thenReturn(List.of(agendamento));
+
+            when(agendamentoRepository.save(any(Agendamento.class)))
+                    .thenReturn(agendamento);
 
             agendamentoService.confirmarAgendamentosAutomaticamente();
 
