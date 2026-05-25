@@ -11,7 +11,10 @@ import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
+import com.sptech.school.fira_manager_api.model.TipoAgendamento;
 import com.sptech.school.fira_manager_api.model.Usuario;
+
+import java.util.List;
 
 public class AgendamentoMapper {
 
@@ -61,15 +64,14 @@ public class AgendamentoMapper {
     }
 
     public static AgendamentoResponse toResponse(Agendamento agendamento, Saldo saldo) {
-        ProfessorResponse professorResponse = toProfessorResponse(agendamento.getProfessor());
         ServicoResponse servicoResponse = toServicoResponse(agendamento.getServico());
         SaldoResponse saldoResponse = SaldoMapper.toResponse(saldo);
-        UsuarioResponse usuarioResponse = toUsuarioResponse(agendamento.getAluno());
         CondominioResponse condominioResponse = toCondominioResponse(agendamento.getCondominio());
+        ProfessorResponse professorResponse = toProfessorResponse(agendamento.getProfessor());
 
         AgendamentoResponse response = new AgendamentoResponse(
                 agendamento.getId(),
-                usuarioResponse,
+                toUsuarioResponse(agendamento.getAluno()),
                 saldoResponse,
                 professorResponse,
                 toProfessorResponse(agendamento.getAuxiliar()),
@@ -85,6 +87,18 @@ public class AgendamentoMapper {
         );
 
         response.setRebatedor(toProfessorResponse(agendamento.getRebatedor()));
+
+        if (agendamento.getTipo() != null) {
+            response.setTipo(agendamento.getTipo().name());
+        }
+
+        if (agendamento.getTipo() == TipoAgendamento.GRUPO && agendamento.getAlunos() != null) {
+            List<UsuarioResponse> alunosResponse = agendamento.getAlunos()
+                    .stream()
+                    .map(AgendamentoMapper::toUsuarioResponse)
+                    .toList();
+            response.setAlunos(alunosResponse);
+        }
 
         return response;
     }

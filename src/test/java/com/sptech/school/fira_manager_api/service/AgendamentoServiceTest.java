@@ -256,15 +256,9 @@ class AgendamentoServiceTest {
         @Test
         @DisplayName("Criar Agendamento Falho - Hora fim antes da hora início")
         void criarAgendamentoHoraFimAntesHoraInicio() {
-            Usuario aluno = criarAluno();
-            Servico servico = criarServico();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
-
             AgendamentoRequest request = criarRequest();
             request.setHoraInicio(LocalTime.of(11, 0));
             request.setHoraFim(LocalTime.of(10, 0)); // fim antes do início
-
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> agendamentoService.criarAgendamento(request)
@@ -275,15 +269,9 @@ class AgendamentoServiceTest {
         @Test
         @DisplayName("Criar Agendamento Falho - Intervalo não é múltiplo de 30 minutos")
         void criarAgendamentoIntervaloNaoMultiploDe30() {
-            Usuario aluno = criarAluno();
-            Servico servico = criarServico();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
-
             AgendamentoRequest request = criarRequest();
             request.setHoraInicio(LocalTime.of(10, 0));
             request.setHoraFim(LocalTime.of(10, 45)); // 45 min — não é múltiplo de 30
-
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> agendamentoService.criarAgendamento(request)
@@ -297,23 +285,19 @@ class AgendamentoServiceTest {
             Usuario aluno = criarAluno();
             Usuario professor = criarProfessor();
             Servico servico = criarServico();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
 
             Condominio condominioOutro = new Condominio();
             condominioOutro.setId(2L);
             condominioOutro.setNome("Condomínio Outro");
 
-            // Agendamento existente no condomínio 2: 12:00 - 13:00
             Agendamento agendamentoExistente = criarAgendamentoSalvo(aluno, professor, servico, condominioOutro);
             agendamentoExistente.setHoraInicio(LocalTime.of(12, 0));
             agendamentoExistente.setHoraFim(LocalTime.of(13, 0));
 
-            // Novo agendamento no condomínio 1: 13:30 - 14:30 (menos de 1h de intervalo)
             AgendamentoRequest request = criarRequest();
             request.setHoraInicio(LocalTime.of(13, 30));
             request.setHoraFim(LocalTime.of(14, 30));
 
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
             when(agendamentoRepository.findByProfessorIdAndDataAndStatusNot(eq(2L), any(LocalDate.class), eq("cancelado")))
                     .thenReturn(List.of(agendamentoExistente));
 
@@ -599,7 +583,6 @@ class AgendamentoServiceTest {
             Usuario professor = criarProfessor();
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             agendamento.setStatus("pendente");
 
@@ -607,7 +590,6 @@ class AgendamentoServiceTest {
             statusRequest.setStatus("confirmado");
 
             when(agendamentoRepository.findById(1L)).thenReturn(Optional.of(agendamento));
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
             when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamento);
 
             AgendamentoResponse response = agendamentoService.atualizarStatusAgendamentoPorId(1L, statusRequest);
@@ -623,7 +605,6 @@ class AgendamentoServiceTest {
             Usuario professor = criarProfessor();
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             agendamento.setStatus("confirmado");
 
@@ -631,7 +612,6 @@ class AgendamentoServiceTest {
             statusRequest.setStatus("finalizado");
 
             when(agendamentoRepository.findById(1L)).thenReturn(Optional.of(agendamento));
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
             when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamento);
 
             AgendamentoResponse response = agendamentoService.atualizarStatusAgendamentoPorId(1L, statusRequest);
@@ -673,14 +653,12 @@ class AgendamentoServiceTest {
             Usuario professor = criarProfessor();
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
 
             AgendamentoStatusRequest statusRequest = new AgendamentoStatusRequest();
             statusRequest.setStatus("   ");
 
             when(agendamentoRepository.findById(1L)).thenReturn(Optional.of(agendamento));
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> agendamentoService.atualizarStatusAgendamentoPorId(1L, statusRequest)
@@ -695,7 +673,6 @@ class AgendamentoServiceTest {
             Usuario professor = criarProfessor();
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             agendamento.setStatus("pendente");
 
@@ -703,7 +680,6 @@ class AgendamentoServiceTest {
             statusRequest.setStatus("finalizado");
 
             when(agendamentoRepository.findById(1L)).thenReturn(Optional.of(agendamento));
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> agendamentoService.atualizarStatusAgendamentoPorId(1L, statusRequest)
@@ -718,7 +694,6 @@ class AgendamentoServiceTest {
             Usuario professor = criarProfessor();
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             agendamento.setStatus("finalizado");
 
@@ -727,7 +702,6 @@ class AgendamentoServiceTest {
             statusRequest.setObservacao("Tentando cancelar após finalizar");
 
             when(agendamentoRepository.findById(1L)).thenReturn(Optional.of(agendamento));
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> agendamentoService.atualizarStatusAgendamentoPorId(1L, statusRequest)
@@ -742,7 +716,6 @@ class AgendamentoServiceTest {
             Usuario professor = criarProfessor();
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
-            Saldo saldo = criarSaldo(aluno, servico, 5.0);
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             agendamento.setStatus("pendente");
 
@@ -750,7 +723,6 @@ class AgendamentoServiceTest {
             statusRequest.setStatus("cancelado");
 
             when(agendamentoRepository.findById(1L)).thenReturn(Optional.of(agendamento));
-            when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> agendamentoService.atualizarStatusAgendamentoPorId(1L, statusRequest)
@@ -770,7 +742,6 @@ class AgendamentoServiceTest {
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
 
-            // Data no passado → limite de confirmação já passou → confirma
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             agendamento.setData(LocalDate.now().minusDays(1));
             agendamento.setHoraInicio(LocalTime.of(10, 0));
@@ -793,7 +764,6 @@ class AgendamentoServiceTest {
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
 
-            // Data muito no futuro → limite ainda não chegou → não confirma
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             agendamento.setData(LocalDate.now().plusDays(5));
             agendamento.setHoraInicio(LocalTime.of(10, 0));
