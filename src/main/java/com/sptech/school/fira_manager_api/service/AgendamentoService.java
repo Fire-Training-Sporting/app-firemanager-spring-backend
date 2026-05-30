@@ -335,6 +335,7 @@ public class AgendamentoService {
 
             agendamento.setData(dataRecorrente);
             agendamento.setHoraFim(dto.getHoraFim());
+            agendamento.setTipo(TipoAgendamento.INDIVIDUAL);
 
             deduzirSaldo(saldo, custo);
 
