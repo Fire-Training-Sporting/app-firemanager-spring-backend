@@ -842,4 +842,36 @@ class AgendamentoServiceTest {
             assertEquals(404, exception.getStatusCode().value());
         }
     }
+
+    @Test
+    void deveFalharTransicaoInvalida() {
+        Agendamento agendamento = new Agendamento();
+        agendamento.setId(1L);
+        agendamento.setStatus("pendente");
+
+        when(agendamentoRepository.findById(1L))
+                .thenReturn(Optional.of(agendamento));
+
+        AgendamentoStatusRequest dto = new AgendamentoStatusRequest();
+        dto.setStatus("finalizado");
+
+        assertThrows(ResponseStatusException.class,
+                () -> agendamentoService.atualizarStatusAgendamentoPorId(1L, dto));
+    }
+
+    @Test
+    void deveFalharQuandoStatusVazio() {
+        Agendamento agendamento = new Agendamento();
+        agendamento.setId(1L);
+        agendamento.setStatus("pendente");
+
+        when(agendamentoRepository.findById(1L))
+                .thenReturn(Optional.of(agendamento));
+
+        AgendamentoStatusRequest dto = new AgendamentoStatusRequest();
+        dto.setStatus("   ");
+
+        assertThrows(ResponseStatusException.class,
+                () -> agendamentoService.atualizarStatusAgendamentoPorId(1L, dto));
+    }
 }
