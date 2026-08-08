@@ -1,18 +1,19 @@
-package com.sptech.school.fira_manager_api.dto.responses;
+package com.sptech.school.fira_manager_api.dto.responses.permissao;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ServicoResponse {
+@Schema(name = "PermissaoResponse", description = "Dados de resposta de uma Permissão.")
+public class PermissaoResponse {
 
-    @Schema(description = "ID do Servico", example = "1")
+    @Schema(description = "ID da Permissão", example = "1")
     private Long id;
 
-    @Schema(description = "Nome do serviço", example = "Tênis")
+    @Schema(description = "Nome da permissão", example = "Criar ou Excluir agendamento")
     private String nome;
 
-    public ServicoResponse(Long id, String nome) {
+    public PermissaoResponse(Long id, String nome) {
         this.id = id;
         this.nome = nome;
     }

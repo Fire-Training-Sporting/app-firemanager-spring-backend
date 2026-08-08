@@ -1,5 +1,6 @@
 package com.sptech.school.fira_manager_api.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,5 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
    Long countByProfessorIdAndServicoIdAndStatus(Long professorId, Long servicoId, String status);
    Long countByAuxiliarIdAndServicoIdAndStatus(Long auxiliarId, Long servicoId, String status);
    List<Agendamento> findByStatusIn(List<String> status);
+   List<Agendamento> findByProfessorIdAndDataAndStatusNot(Long professorId, LocalDate data, String status);
 }

@@ -3,22 +3,16 @@ package com.sptech.school.fira_manager_api.dto.requests.agendamento;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "DTO para atualização de status de agendamentos")
-public class AgendamentoStatusDTO {
+@Schema(name = "AgendamentoStatusRequest", description = "Payload para atualização de status de agendamentos.")
+public class AgendamentoStatusRequest {
 
-    @Schema(
-        description = "Novo status do agendamento",
-        example = "cancelado",
-        allowableValues = {"confirmado", "cancelado", "finalizado"}
-    )
+    @Schema(description = "Novo status do agendamento", example = "cancelado",
+            allowableValues = {"confirmado", "cancelado", "finalizado"})
     @NotBlank(message = "Status é obrigatório")
     private String status;
 
-    @Schema(
-        description = "Justificativa obrigatória quando o status for 'cancelado'",
-        example = "Cancelado devido a forte chuva e alagamento",
-        nullable = true
-    )
+    @Schema(description = "Justificativa obrigatória quando o status for 'cancelado'",
+            example = "Cancelado devido a forte chuva e alagamento")
     private String observacao;
 
     public String getStatus() {

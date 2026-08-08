@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.service;
 
 import java.util.List;
 
+import com.sptech.school.fira_manager_api.mapper.tipoUsuario.TipoUsuarioMapper;
 import org.springframework.stereotype.Service;
 
 import com.sptech.school.fira_manager_api.dto.responses.tipoUsuario.TipoUsuarioResponse;
@@ -17,15 +18,11 @@ public class TipoUsuarioService {
         this.tipoUsuarioRepository = tipoUsuarioRepository;
     }
 
-    private TipoUsuarioResponse mapearResponse(TipoUsuario tipoUsuario) {
-        return new TipoUsuarioResponse(tipoUsuario.getId(), tipoUsuario.getCargo());
-    }
-
     public List<TipoUsuarioResponse> buscarTipoUsuarios() {
         return tipoUsuarioRepository.findAll()
                 .stream()
                 .filter(tipo -> !tipo.getCargo().equalsIgnoreCase("root"))
-                .map(this::mapearResponse)
+                .map(TipoUsuarioMapper::toResponse)
                 .toList();
     }
 }

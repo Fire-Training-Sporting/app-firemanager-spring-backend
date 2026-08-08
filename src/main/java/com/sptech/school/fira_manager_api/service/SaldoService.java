@@ -6,12 +6,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.ProfessorResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ProfessorSaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ServicoProfessorResponse;
-import com.sptech.school.fira_manager_api.dto.responses.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.requests.saldo.SaldoRequest;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.ProfessorSaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.ServicoProfessorResponse;
+import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.ProfessorResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
@@ -72,7 +72,7 @@ public class SaldoService {
     }
 
 
-    public SaldoResponse criarSaldo(SaldoDTO dto) {
+    public SaldoResponse criarSaldo(SaldoRequest dto) {
         Saldo saldoNovo = new Saldo();
 
         Usuario saldoUsuario = usuarioRepository.findById(dto.getAluno())
@@ -104,7 +104,7 @@ public class SaldoService {
         return toSaldoResponse(saldo);
     }
 
-    public SaldoResponse atualizarSaldoPorId(SaldoDTO dto, Long id) {
+    public SaldoResponse atualizarSaldoPorId(SaldoRequest dto, Long id) {
         Saldo saldoNovo = saldoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
 
