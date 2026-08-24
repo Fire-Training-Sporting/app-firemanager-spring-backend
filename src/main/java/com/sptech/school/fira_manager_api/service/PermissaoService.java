@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.requests.permissao.PermissaoRequest;
 import com.sptech.school.fira_manager_api.dto.responses.permissao.PermissaoResponse;
+import com.sptech.school.fira_manager_api.mapper.permissao.PermissaoMapper;
 import com.sptech.school.fira_manager_api.model.Permissao;
 import com.sptech.school.fira_manager_api.repository.PermissaoRepository;
 import org.springframework.http.HttpStatus;
@@ -19,19 +20,15 @@ public class PermissaoService {
         this.permissaoRepository = permissaoRepository;
     }
 
-    private PermissaoResponse toResponse(Permissao permissao) {
-        return new PermissaoResponse(permissao.getId(), permissao.getNome());
-    }
-
     public PermissaoResponse adicionarNovaPermissao(PermissaoRequest dto) {
-        Permissao novaPermissao = new Permissao(dto.getNome());
-        return toResponse(permissaoRepository.save(novaPermissao));
+        Permissao novaPermissao = PermissaoMapper.toEntity(dto);
+        return PermissaoMapper.toResponse(permissaoRepository.save(novaPermissao));
     }
 
     public List<PermissaoResponse> obterPermissoes() {
         return permissaoRepository.findAll()
                 .stream()
-                .map(this::toResponse)
+                .map(PermissaoMapper::toResponse)
                 .toList();
     }
 
@@ -41,7 +38,7 @@ public class PermissaoService {
 
         permissao.setNome(dto.getNome());
 
-        return toResponse(permissaoRepository.save(permissao));
+        return PermissaoMapper.toResponse(permissaoRepository.save(permissao));
     }
 
     public void deletarPermissao(Long id) {

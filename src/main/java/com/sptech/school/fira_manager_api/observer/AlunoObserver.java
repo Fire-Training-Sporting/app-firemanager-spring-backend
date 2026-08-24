@@ -1,6 +1,8 @@
 package com.sptech.school.fira_manager_api.observer;
 
 import com.sptech.school.fira_manager_api.model.Agendamento;
+import com.sptech.school.fira_manager_api.model.TipoAgendamento;
+import com.sptech.school.fira_manager_api.model.Usuario;
 import com.sptech.school.fira_manager_api.service.EmailService;
 
 import java.time.format.DateTimeFormatter;
@@ -22,8 +24,20 @@ public class AlunoObserver implements Observer {
     // aluno envolvido no agendamento.
     @Override
     public void update(Agendamento agendamento) {
-        if (agendamento.getAluno().getId().equals(id)) {
-            String destinatario = agendamento.getAluno().getEmail();
+        Usuario aluno;
+
+        if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+            aluno = agendamento.getAlunos().stream()
+                    .filter(a -> a.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+        } else {
+            aluno = agendamento.getAluno();
+        }
+
+        if (aluno == null || !aluno.getId().equals(id)) return;
+
+        String destinatario = aluno.getEmail();
 
             String data = agendamento.getData().format(DATA_FORMATADA);
             String hora = agendamento.getHoraInicio().format(HORA_FORMATADA);
@@ -81,7 +95,6 @@ public class AlunoObserver implements Observer {
                 System.err.println("Erro ao enviar email: " + e.getMessage());
                 e.printStackTrace();
             }
-        }
     }
 }
 

@@ -3,6 +3,7 @@ package com.sptech.school.fira_manager_api.observer;
 import java.time.format.DateTimeFormatter;
 
 import com.sptech.school.fira_manager_api.model.Agendamento;
+import com.sptech.school.fira_manager_api.model.TipoAgendamento;
 import com.sptech.school.fira_manager_api.service.EmailService;
 
 public class ProfessorObserver implements Observer {
@@ -26,12 +27,27 @@ public class ProfessorObserver implements Observer {
             String destinatario = agendamento.getProfessor().getEmail();
 
             Long agendamentoId = agendamento.getId();
-            String aluno = agendamento.getAluno().getNome();
-            String telefoneAluno = agendamento.getAluno().getTelefone();
             String data = agendamento.getData().format(DATA_FORMATADA);
             String hora = agendamento.getHoraInicio().format(HORA_FORMATADA);
             String nomeCondominio = agendamento.getCondominio().getNome();
             String observacao = agendamento.getObservacao() != null ? agendamento.getObservacao() : "-";
+
+            String aluno;
+            String telefoneAluno;
+
+            if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+                aluno = agendamento.getAlunos().stream()
+                        .map(a -> a.getNome())
+                        .reduce((a, b) -> a + ", " + b)
+                        .orElse("Grupo");
+                telefoneAluno = agendamento.getAlunos().stream()
+                        .map(a -> a.getNome() + ": " + a.getTelefone())
+                        .reduce((a, b) -> a + " | " + b)
+                        .orElse("-");
+            } else {
+                aluno = agendamento.getAluno().getNome();
+                telefoneAluno = agendamento.getAluno().getTelefone();
+            }
 
             String assunto = "";
             String mensagemStatus = "";
