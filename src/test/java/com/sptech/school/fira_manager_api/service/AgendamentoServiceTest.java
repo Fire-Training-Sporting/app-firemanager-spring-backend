@@ -127,6 +127,14 @@ class AgendamentoServiceTest {
         when(saldoRepository.save(any(Saldo.class))).thenReturn(saldo);
     }
 
+    public EmailService getEmailService() {
+        return emailService;
+    }
+
+    public void setEmailService(EmailService emailService) {
+        this.emailService = emailService;
+    }
+
     @Nested
     class CriarAgendamento {
 
