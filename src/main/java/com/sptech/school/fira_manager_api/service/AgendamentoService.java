@@ -6,6 +6,9 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
+import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailAlunoNotification;
+import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailProfessorNotification;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -22,9 +25,6 @@ import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
 import com.sptech.school.fira_manager_api.model.TipoAgendamento;
 import com.sptech.school.fira_manager_api.model.Usuario;
-import com.sptech.school.fira_manager_api.observer.AgendamentoSubject;
-import com.sptech.school.fira_manager_api.observer.AlunoObserver;
-import com.sptech.school.fira_manager_api.observer.ProfessorObserver;
 import com.sptech.school.fira_manager_api.model.SaldoTransacao;
 import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
@@ -44,16 +44,18 @@ public class AgendamentoService {
     private final ServicoRepository servicoRepository;
     private final SaldoRepository saldoRepository;
     private final SaldoTransacaoRepository saldoTransacaoRepository;
-    private final EmailService emailService;
+//    private final EmailService emailService;
+    private final NotificationServiceClient client;
 
-    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, EmailService emailService) {
+    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, NotificationServiceClient client) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.condominioRepository = condominioRepository;
         this.servicoRepository = servicoRepository;
         this.saldoRepository = saldoRepository;
         this.saldoTransacaoRepository = saldoTransacaoRepository;
-        this.emailService = emailService;
+        this.client = client;
+//        this.emailService = emailService;
     }
 
     private void deduzirSaldo(Saldo saldo, Double custo) {
@@ -156,18 +158,32 @@ public class AgendamentoService {
     }
 
     private void notificar(Agendamento agendamento) {
-        AgendamentoSubject subject = new AgendamentoSubject();
+        EmailAlunoNotification emailAluno = new EmailAlunoNotification(
+                agendamento.getId(),
+                agendamento.getProfessor().getNome(),
+                agendamento.getData(),
+                agendamento.getHoraInicio(),
+                agendamento.getStatus(),
+                agendamento.getAluno().getEmail()
+        );
 
-        if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
-            for (Usuario aluno : agendamento.getAlunos()) {
-                subject.addObserver(new AlunoObserver(aluno.getId(), emailService));
-            }
-        } else {
-            subject.addObserver(new AlunoObserver(agendamento.getAluno().getId(), emailService));
-        }
+        EmailProfessorNotification emailProfessor = new EmailProfessorNotification(
+                agendamento.getId(),
+                agendamento.getAluno().getNome(),
+                agendamento.getAluno().getTelefone(),
+                agendamento.getCondominio().getNome(),
+                agendamento.getObservacao(),
+                agendamento.getData(),
+                agendamento.getHoraInicio(),
+                agendamento.getStatus(),
+                agendamento.getProfessor().getEmail()
+        );
 
-        subject.addObserver(new ProfessorObserver(agendamento.getProfessor().getId(), emailService));
-        subject.notifyObservers(agendamento);
+        client.notificarAluno(emailAluno);
+        System.out.println("Requisicao de notificacao para aluno realizada");
+
+        client.notificarProfessor(emailProfessor);
+        System.out.println("Requisicao de notificacao para professor realizada");
     }
 
     private Double calcularCustoSaldo(LocalTime horaInicio, LocalTime horaFim) {
