@@ -22,11 +22,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,12 +48,22 @@ class UsuarioServiceTest {
     @InjectMocks
     private UsuarioService usuarioService;
 
+    private void mockAutenticacaoAdmin() {
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "admin",
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMINISTRACAO"))
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     @Nested
     class CriarUsuario {
 
         @Test
         @DisplayName("Cadastrar Funcionário Sucesso ")
         void cadastrarUsuarioFuncionario() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(1L);
             request.setNome("Marcos Vinicius");
@@ -83,6 +96,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Cadastrar Aluno Sucesso")
         void cadastrarUsuarioAluno() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(4L);
             request.setNome("Marcos Vinicius");
@@ -123,6 +137,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Cadastro Falho - Nome Cadastrado")
         void cadastrarUsuarioNomeRepetido() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(4L);
             request.setNome("Marcos Vinicius");
@@ -142,6 +157,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Cadastro Falho - Email Cadastrado")
         void cadastrarUsuarioEmailRepetido() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(4L);
             request.setNome("Marcos Vinicius");
@@ -162,6 +178,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Cadastro Falho - Telefone Cadastrado")
         void cadastrarUsuarioTelefoneRepetido() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(4L);
             request.setNome("Marcos Vinicius");
@@ -183,6 +200,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Cadastro Falho - Tipo Usuário Existe")
         void cadastrarUsuarioTipoUsuarioInvalido() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(99L);
             request.setNome("Marcos Vinicius");
@@ -204,6 +222,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Cadastro Falho - Aluno Condomínio Inexistente")
         void cadastrarUsuarioAlunoCondominioInvalido() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(4L);
             request.setNome("Marcos Vinicius");
@@ -234,6 +253,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Cadastro Falho - Aluno sem Condomínio")
         void cadastrarUsuarioAlunoSemCondominio() {
+            mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
             request.setTipoUsuario(4L);
             request.setNome("Marcos Vinicius");
