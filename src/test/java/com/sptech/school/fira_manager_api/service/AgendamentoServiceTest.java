@@ -3,6 +3,7 @@ package com.sptech.school.fira_manager_api.service;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
+import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
 import com.sptech.school.fira_manager_api.model.*;
 import com.sptech.school.fira_manager_api.repository.*;
@@ -33,7 +34,7 @@ class AgendamentoServiceTest {
     @Mock private ServicoRepository servicoRepository;
     @Mock private SaldoRepository saldoRepository;
     @Mock private SaldoTransacaoRepository saldoTransacaoRepository;
-    @Mock private EmailService emailService;
+    @Mock private NotificationServiceClient client;
 
     @InjectMocks
     private AgendamentoService agendamentoService;
@@ -127,12 +128,12 @@ class AgendamentoServiceTest {
         when(saldoRepository.save(any(Saldo.class))).thenReturn(saldo);
     }
 
-    public EmailService getEmailService() {
-        return emailService;
+    public NotificationServiceClient getClient() {
+        return client;
     }
 
-    public void setEmailService(EmailService emailService) {
-        this.emailService = emailService;
+    public void setClient(NotificationServiceClient client) {
+        this.client = client;
     }
 
     @Nested
