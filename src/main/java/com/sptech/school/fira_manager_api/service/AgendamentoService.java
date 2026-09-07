@@ -6,6 +6,9 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
+import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailAlunoNotification;
+import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailProfessorNotification;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,10 +23,8 @@ import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
+import com.sptech.school.fira_manager_api.model.TipoAgendamento;
 import com.sptech.school.fira_manager_api.model.Usuario;
-import com.sptech.school.fira_manager_api.observer.AgendamentoSubject;
-import com.sptech.school.fira_manager_api.observer.AlunoObserver;
-import com.sptech.school.fira_manager_api.observer.ProfessorObserver;
 import com.sptech.school.fira_manager_api.model.SaldoTransacao;
 import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
@@ -43,16 +44,18 @@ public class AgendamentoService {
     private final ServicoRepository servicoRepository;
     private final SaldoRepository saldoRepository;
     private final SaldoTransacaoRepository saldoTransacaoRepository;
-    private final EmailService emailService;
+//    private final EmailService emailService;
+    private final NotificationServiceClient client;
 
-    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, EmailService emailService) {
+    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, NotificationServiceClient client) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.condominioRepository = condominioRepository;
         this.servicoRepository = servicoRepository;
         this.saldoRepository = saldoRepository;
         this.saldoTransacaoRepository = saldoTransacaoRepository;
-        this.emailService = emailService;
+        this.client = client;
+//        this.emailService = emailService;
     }
 
     private void deduzirSaldo(Saldo saldo, Double custo) {
@@ -82,6 +85,10 @@ public class AgendamentoService {
     }
 
     private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento) {
+        if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+            return AgendamentoMapper.toResponse(agendamento, null);
+        }
+
         Saldo saldo = saldoRepository
                 .findByAlunoIdAndServicoId(agendamento.getAluno().getId(), agendamento.getServico().getId())
                 .orElse(null);
@@ -151,11 +158,32 @@ public class AgendamentoService {
     }
 
     private void notificar(Agendamento agendamento) {
-        AgendamentoSubject subject = new AgendamentoSubject();
+        EmailAlunoNotification emailAluno = new EmailAlunoNotification(
+                agendamento.getId(),
+                agendamento.getProfessor().getNome(),
+                agendamento.getData(),
+                agendamento.getHoraInicio(),
+                agendamento.getStatus(),
+                agendamento.getAluno().getEmail()
+        );
 
-        subject.addObserver(new AlunoObserver(agendamento.getAluno().getId(), emailService));
-        subject.addObserver(new ProfessorObserver(agendamento.getProfessor().getId(), emailService));
-        subject.notifyObservers(agendamento);
+        EmailProfessorNotification emailProfessor = new EmailProfessorNotification(
+                agendamento.getId(),
+                agendamento.getAluno().getNome(),
+                agendamento.getAluno().getTelefone(),
+                agendamento.getCondominio().getNome(),
+                agendamento.getObservacao(),
+                agendamento.getData(),
+                agendamento.getHoraInicio(),
+                agendamento.getStatus(),
+                agendamento.getProfessor().getEmail()
+        );
+
+        client.notificarAluno(emailAluno);
+        System.out.println("Requisicao de notificacao para aluno realizada");
+
+        client.notificarProfessor(emailProfessor);
+        System.out.println("Requisicao de notificacao para professor realizada");
     }
 
     private Double calcularCustoSaldo(LocalTime horaInicio, LocalTime horaFim) {
@@ -204,12 +232,7 @@ public class AgendamentoService {
     public AgendamentoResponse criarAgendamento(AgendamentoRequest dto) {
         Agendamento agendamento = new Agendamento();
 
-        Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
         Double custo = calcularCustoSaldo(dto.getHoraInicio(), dto.getHoraFim());
-
-        if (saldo.getQuantidade() < custo) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
-        }
 
         validarConflitoProfessor(
                 dto.getProfessor(),
@@ -219,6 +242,48 @@ public class AgendamentoService {
                 dto.getHoraFim(),
                 null
         );
+
+        if (dto.getTipo() == TipoAgendamento.GRUPO) {
+            if (dto.getAlunos() == null || dto.getAlunos().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Agendamento em grupo requer ao menos um aluno");
+            }
+
+            List<Saldo> saldos = new ArrayList<>();
+            for (Long alunoId : dto.getAlunos()) {
+                Saldo saldo = buscarSaldo(alunoId, dto.getServico());
+                if (saldo.getQuantidade() < custo) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente para o aluno id " + alunoId);
+                }
+                saldos.add(saldo);
+            }
+
+            agendamento.setProfessor(buscarUsuario(dto.getProfessor(), "Professor"));
+            agendamento.setAuxiliar(buscarAuxiliar(dto.getAuxiliar()));
+            agendamento.setRebatedor(buscarRebatedor(dto.getRebatedor()));
+            agendamento.setServico(buscarServico(dto.getServico()));
+            agendamento.setCondominio(buscarCondominio(dto.getCondominio()));
+            agendamento.setData(dto.getData());
+            agendamento.setHoraInicio(dto.getHoraInicio());
+            agendamento.setHoraFim(dto.getHoraFim());
+            agendamento.setObservacao(dto.getObservacao());
+            agendamento.setTipo(TipoAgendamento.GRUPO);
+            agendamento.setAlunos(dto.getAlunos().stream().map(id -> buscarUsuario(id, "Aluno")).toList());
+
+            for (Saldo saldo : saldos) {
+                deduzirSaldo(saldo, custo);
+            }
+
+            agendamento = agendamentoRepository.save(agendamento);
+            notificar(agendamento);
+
+            return AgendamentoMapper.toResponse(agendamento, null);
+        }
+
+        Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
+
+        if (saldo.getQuantidade() < custo) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
+        }
 
         preencherAgendamento(
                 agendamento,
@@ -231,6 +296,7 @@ public class AgendamentoService {
         );
 
         agendamento.setHoraFim(dto.getHoraFim());
+        agendamento.setTipo(TipoAgendamento.INDIVIDUAL);
 
         deduzirSaldo(saldo, custo);
 
@@ -285,6 +351,7 @@ public class AgendamentoService {
 
             agendamento.setData(dataRecorrente);
             agendamento.setHoraFim(dto.getHoraFim());
+            agendamento.setTipo(TipoAgendamento.INDIVIDUAL);
 
             deduzirSaldo(saldo, custo);
 
@@ -401,11 +468,6 @@ public class AgendamentoService {
     public AgendamentoResponse atualizarStatusAgendamentoPorId(Long id, AgendamentoStatusRequest dto) {
         Agendamento agendamento = buscarAgendamento(id);
 
-        Saldo saldo = buscarSaldo(
-                agendamento.getAluno().getId(),
-                agendamento.getServico().getId()
-        );
-
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status não pode ser vazio");
         }
@@ -433,7 +495,16 @@ public class AgendamentoService {
             }
 
             Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
-            estornarSaldo(saldo, custoEstorno);
+
+            if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+                for (Usuario aluno : agendamento.getAlunos()) {
+                    Saldo saldoAluno = buscarSaldo(aluno.getId(), agendamento.getServico().getId());
+                    estornarSaldo(saldoAluno, custoEstorno);
+                }
+            } else {
+                Saldo saldo = buscarSaldo(agendamento.getAluno().getId(), agendamento.getServico().getId());
+                estornarSaldo(saldo, custoEstorno);
+            }
 
             agendamento.setObservacao(dto.getObservacao().trim());
         }
@@ -461,13 +532,19 @@ public class AgendamentoService {
         if (agendamento.getStatus().equals("confirmado") || agendamento.getStatus().equals("finalizado")) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Agendamento confirmado ou finalizado não pode ser deletado");
         }
+
         if (agendamento.getStatus().equals("pendente")) {
-            Saldo saldo = buscarSaldo(
-                    agendamento.getAluno().getId(),
-                    agendamento.getServico().getId()
-            );
             Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
-            estornarSaldo(saldo, custoEstorno);
+
+            if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+                for (Usuario aluno : agendamento.getAlunos()) {
+                    Saldo saldoAluno = buscarSaldo(aluno.getId(), agendamento.getServico().getId());
+                    estornarSaldo(saldoAluno, custoEstorno);
+                }
+            } else {
+                Saldo saldo = buscarSaldo(agendamento.getAluno().getId(), agendamento.getServico().getId());
+                estornarSaldo(saldo, custoEstorno);
+            }
         }
 
         agendamentoRepository.deleteById(id);

@@ -51,6 +51,16 @@ public class UsuarioService {
     }
 
     public UsuarioResponse criarUsuario(UsuarioRequest dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth != null && auth.isAuthenticated() &&
+                auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRACAO")
+                                || a.getAuthority().equals("ROLE_ROOT"));
+
+        if (!isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente administradores podem criar usuários");
+        }
+
         if (usuarioRepository.existsByNome(dto.getNome())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Alguém com este nome já cadastrado");
         }

@@ -2,16 +2,25 @@ package com.sptech.school.fira_manager_api.dto.requests.agendamento;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
+import com.sptech.school.fira_manager_api.model.TipoAgendamento;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 @Schema(name = "AgendamentoRequest", description = "Payload para criação e atualização de agendamentos.")
 public class AgendamentoRequest {
 
-    @Schema(description = "ID do aluno", example = "1")
-    @NotNull(message = "ID do aluno é obrigatório")
+    @Schema(description = "ID do aluno (obrigatório para tipo INDIVIDUAL)", example = "1")
     private Long aluno;
+
+    @Schema(description = "IDs dos alunos (obrigatório para tipo GRUPO)", example = "[1, 2, 3]")
+    private List<Long> alunos;
+
+    @Schema(description = "Tipo do agendamento (INDIVIDUAL ou GRUPO)", example = "INDIVIDUAL")
+    private TipoAgendamento tipo;
+
+
 
     @Schema(description = "ID do professor", example = "2")
     @NotNull(message = "ID do professor é obrigatório")
@@ -52,6 +61,22 @@ public class AgendamentoRequest {
 
     public void setAluno(Long aluno) {
         this.aluno = aluno;
+    }
+
+    public List<Long> getAlunos() {
+        return alunos;
+    }
+
+    public void setAlunos(List<Long> alunos) {
+        this.alunos = alunos;
+    }
+
+    public TipoAgendamento getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(TipoAgendamento tipo) {
+        this.tipo = tipo;
     }
 
     public Long getProfessor() {

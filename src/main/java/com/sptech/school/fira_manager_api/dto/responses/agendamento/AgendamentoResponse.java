@@ -3,6 +3,7 @@ package com.sptech.school.fira_manager_api.dto.responses.agendamento;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -23,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
         "auxiliar",
         "rebatedor",
         "servico",
+        "tipo",
         "condominio",
         "data",
         "horaInicio",
@@ -44,6 +46,9 @@ public class AgendamentoResponse {
     @Schema(description = "Aluno do Agendamento", required = true)
     private UsuarioResponse aluno;
 
+    @Schema(description = "Alunos do Agendamento (opcional para agendamento recorrente)", required = false)
+    private List<UsuarioResponse> alunos;
+
     @Schema(description = "Saldo do aluno no serviço", required = true)
     private SaldoResponse saldo;
 
@@ -58,6 +63,9 @@ public class AgendamentoResponse {
 
     @Schema(description = "Serviço do Agendamento", required = true)
     private ServicoResponse servico;
+
+    @Schema(description = "Tipo do agendamento (INDIVIDUAL ou GRUPO)", example = "INDIVIDUAL")
+    private String tipo;
 
     @Schema(description = "Condomínio onde o Agendamento foi realizado", required = true)
     private CondominioResponse condominio;
@@ -239,5 +247,21 @@ public class AgendamentoResponse {
 
     public void setCondominio(CondominioResponse condominio) {
         this.condominio = condominio;
+    }
+
+    public List<UsuarioResponse> getAlunos() {
+        return alunos;
+    }
+
+    public void setAlunos(List<UsuarioResponse> alunos) {
+        this.alunos = alunos;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 }

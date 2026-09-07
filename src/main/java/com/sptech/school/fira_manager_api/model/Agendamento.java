@@ -3,21 +3,15 @@ package com.sptech.school.fira_manager_api.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
+import com.fasterxml.jackson.databind.ser.std.StdKeySerializers;
+import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -30,7 +24,7 @@ public class Agendamento {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "fk_aluno", nullable = false)
+    @JoinColumn(name = "fk_aluno", nullable = true)
     private Usuario aluno;
 
     @ManyToOne
@@ -52,6 +46,14 @@ public class Agendamento {
     @ManyToOne
     @JoinColumn(name = "fk_condominio", nullable = false)
     private Condominio condominio;
+
+    @ManyToMany
+    @JoinTable(name = "tb_agendamento_alunos", joinColumns = @JoinColumn(name = "fk_agendamento"), inverseJoinColumns = @JoinColumn(name = "fk_aluno"))
+    private List<Usuario> alunos;
+
+    @Enumerated(EnumType.STRING)
+    private TipoAgendamento tipo;
+
 
     @NotNull(message = "Data não pode estar nula")
     @Column(name = "data_agendamento", nullable = false)
@@ -233,5 +235,21 @@ public class Agendamento {
 
     public void setAtualizadoEm(LocalDateTime atualizadoEm) {
         this.atualizadoEm = atualizadoEm;
+    }
+
+    public List<Usuario> getAlunos() {
+        return alunos;
+    }
+
+    public void setAlunos(List<Usuario> alunos) {
+        this.alunos = alunos;
+    }
+
+    public TipoAgendamento getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(TipoAgendamento tipo) {
+        this.tipo = tipo;
     }
 }

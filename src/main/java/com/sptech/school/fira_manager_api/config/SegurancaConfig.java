@@ -42,7 +42,8 @@ public class SegurancaConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/usuarios/login").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/usuarios").permitAll() // COM ESSA CONFIG QUALQUER UM CONSEGUE CRIAR, O IDEAL É DEPOIS MUDAR PARA SOMENTE ADM
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/usuarios")
+                            .hasAnyRole("ADMINISTRACAO", "ROOT") // PASSAR ESSA CONFIG
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()
