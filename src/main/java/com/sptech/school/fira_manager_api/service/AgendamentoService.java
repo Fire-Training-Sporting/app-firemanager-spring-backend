@@ -44,7 +44,6 @@ public class AgendamentoService {
     private final ServicoRepository servicoRepository;
     private final SaldoRepository saldoRepository;
     private final SaldoTransacaoRepository saldoTransacaoRepository;
-//    private final EmailService emailService;
     private final NotificationServiceClient client;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, NotificationServiceClient client) {
@@ -55,7 +54,6 @@ public class AgendamentoService {
         this.saldoRepository = saldoRepository;
         this.saldoTransacaoRepository = saldoTransacaoRepository;
         this.client = client;
-//        this.emailService = emailService;
     }
 
     private void deduzirSaldo(Saldo saldo, Double custo) {
@@ -245,29 +243,77 @@ public class AgendamentoService {
 
         if (dto.getTipo() == TipoAgendamento.GRUPO) {
             if (dto.getAlunos() == null || dto.getAlunos().isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Agendamento em grupo requer ao menos um aluno");
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Agendamento em grupo requer ao menos um aluno"
+                );
+            }
+
+            if (dto.getAluno() == null) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Agendamento em grupo requer um dono"
+                );
+            }
+
+            if (!dto.getAlunos().contains(dto.getAluno())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "O dono do grupo deve estar entre os alunos do grupo"
+                );
             }
 
             List<Saldo> saldos = new ArrayList<>();
+
             for (Long alunoId : dto.getAlunos()) {
                 Saldo saldo = buscarSaldo(alunoId, dto.getServico());
+
                 if (saldo.getQuantidade() < custo) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente para o aluno id " + alunoId);
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Saldo insuficiente para o aluno id " + alunoId
+                    );
                 }
+
                 saldos.add(saldo);
             }
 
-            agendamento.setProfessor(buscarUsuario(dto.getProfessor(), "Professor"));
-            agendamento.setAuxiliar(buscarAuxiliar(dto.getAuxiliar()));
-            agendamento.setRebatedor(buscarRebatedor(dto.getRebatedor()));
-            agendamento.setServico(buscarServico(dto.getServico()));
-            agendamento.setCondominio(buscarCondominio(dto.getCondominio()));
+            agendamento.setAluno(
+                    buscarUsuario(dto.getAluno(), "Aluno")
+            );
+
+            agendamento.setProfessor(
+                    buscarUsuario(dto.getProfessor(), "Professor")
+            );
+
+            agendamento.setAuxiliar(
+                    buscarAuxiliar(dto.getAuxiliar())
+            );
+
+            agendamento.setRebatedor(
+                    buscarRebatedor(dto.getRebatedor())
+            );
+
+            agendamento.setServico(
+                    buscarServico(dto.getServico())
+            );
+
+            agendamento.setCondominio(
+                    buscarCondominio(dto.getCondominio())
+            );
+
             agendamento.setData(dto.getData());
             agendamento.setHoraInicio(dto.getHoraInicio());
             agendamento.setHoraFim(dto.getHoraFim());
             agendamento.setObservacao(dto.getObservacao());
             agendamento.setTipo(TipoAgendamento.GRUPO);
-            agendamento.setAlunos(dto.getAlunos().stream().map(id -> buscarUsuario(id, "Aluno")).toList());
+
+            agendamento.setAlunos(
+                    dto.getAlunos()
+                            .stream()
+                            .map(id -> buscarUsuario(id, "Aluno"))
+                            .toList()
+            );
 
             for (Saldo saldo : saldos) {
                 deduzirSaldo(saldo, custo);
@@ -282,7 +328,10 @@ public class AgendamentoService {
         Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
 
         if (saldo.getQuantidade() < custo) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Saldo insuficiente"
+            );
         }
 
         preencherAgendamento(
