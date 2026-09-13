@@ -3,6 +3,8 @@ package com.sptech.school.fira_manager_api.service;
 import java.util.List;
 
 import com.sptech.school.fira_manager_api.mapper.usuario.UsuarioMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +37,7 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final AuthenticationManager authenticationManager;
+    private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           TipoUsuarioRepository tipoUsuarioRepository,
@@ -89,7 +92,13 @@ public class UsuarioService {
         }
 
         Usuario usuarioNovo = UsuarioMapper.toEntity(dto, tipoUsuario, senhaCriptografada, null);
-        return UsuarioMapper.toResponse(usuarioRepository.save(usuarioNovo));
+
+        Usuario usuarioSalvo = usuarioRepository.save(usuarioNovo);
+
+        log.info("Usuário criado - id={}, tipoUsuario={}",
+                usuarioSalvo.getId(), tipoUsuario.getCargo());
+
+        return UsuarioMapper.toResponse(usuarioSalvo);
     }
 
     public UsuarioTokenResponse logarUsuario(LoginRequest dto) {
@@ -114,6 +123,10 @@ public class UsuarioService {
         String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
 
         Usuario usuario = usuarioDetalhes.getUsuario();
+
+        log.info("Login realizado - email={}",
+                dto.getEmail());
+
         return UsuarioMapper.toTokenResponse(usuario, token);
     }
 
@@ -169,6 +182,10 @@ public class UsuarioService {
         if (!usuarioRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe");
         }
+
         usuarioRepository.deleteById(id);
+
+        log.info("Usuário deletado - id={}",
+                id);
     }
 }
