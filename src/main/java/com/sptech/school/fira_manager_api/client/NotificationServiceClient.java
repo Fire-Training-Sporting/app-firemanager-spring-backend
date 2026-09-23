@@ -16,10 +16,18 @@ public class NotificationServiceClient {
     }
 
     public void notificarAluno(EmailAlunoNotification request) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.FILA_NOTIFICACAO_ALUNO, request);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_NOTIFICACAO,
+                RabbitMQConfig.ROUTING_KEY_ALUNO,
+                request
+        );
     }
 
     public void notificarProfessor(EmailProfessorNotification request) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.FILA_NOTIFICACAO_PROFESSOR, request);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_NOTIFICACAO,
+                RabbitMQConfig.ROUTING_KEY_PROFESSOR,
+                request
+        );
     }
 }
