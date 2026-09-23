@@ -20,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -279,6 +280,80 @@ class UsuarioServiceTest {
 
     @Nested
     class Login {
+
+        @Test
+        @DisplayName("Login bloqueado após 5 tentativas falhas")
+        void bloquearAposCincoTentativasFalhas() {
+            LoginRequest request = new LoginRequest();
+            request.setEmail("marcos@gmail.com");
+            request.setSenha("senhaErrada");
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenThrow(new BadCredentialsException("Credenciais inválidas"));
+
+            for (int i = 0; i < 5; i++) {
+                ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                        () -> usuarioService.logarUsuario(request));
+                assertEquals(401, exception.getStatusCode().value());
+            }
+
+            ResponseStatusException bloqueado = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.logarUsuario(request));
+            assertEquals(423, bloqueado.getStatusCode().value());
+
+            verify(authenticationManager, times(5)).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        }
+
+        @Test
+        @DisplayName("Login com sucesso reseta contador de tentativas falhas")
+        void loginSucessoResetaContador() {
+            LoginRequest requestErrado = new LoginRequest();
+            requestErrado.setEmail("marcos@gmail.com");
+            requestErrado.setSenha("senhaErrada");
+
+            LoginRequest requestCerto = new LoginRequest();
+            requestCerto.setEmail("marcos@gmail.com");
+            requestCerto.setSenha("teste123*");
+
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(1L);
+            tipo.setCargo("root");
+
+            Usuario usuario = new Usuario();
+            usuario.setId(1L);
+            usuario.setNome("Marcos Vinicius");
+            usuario.setEmail("marcos@gmail.com");
+            usuario.setTipoUsuario(tipo);
+
+            UsuarioDetalhesDto detalhes = new UsuarioDetalhesDto(usuario);
+            Authentication autenticacaoOk = mock(Authentication.class);
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenAnswer(invocation -> {
+                        UsernamePasswordAuthenticationToken token = invocation.getArgument(0);
+                        if ("teste123*".equals(token.getCredentials())) {
+                            return autenticacaoOk;
+                        }
+                        throw new BadCredentialsException("Credenciais inválidas");
+                    });
+            when(autenticacaoOk.getPrincipal()).thenReturn(detalhes);
+            when(gerenciadorTokenJwt.generateToken(detalhes)).thenReturn("token-vitao");
+
+            for (int i = 0; i < 4; i++) {
+                assertThrows(ResponseStatusException.class, () -> usuarioService.logarUsuario(requestErrado));
+            }
+
+            assertNotNull(usuarioService.logarUsuario(requestCerto));
+
+            // depois do sucesso, mais 4 erradas não deveriam bloquear (contador zerou)
+            for (int i = 0; i < 4; i++) {
+                assertThrows(ResponseStatusException.class, () -> usuarioService.logarUsuario(requestErrado));
+            }
+
+            UsuarioTokenResponse response = usuarioService.logarUsuario(requestCerto);
+            assertNotNull(response);
+            assertEquals("token-vitao", response.getToken());
+        }
 
         @Test
         @DisplayName("Login com sucesso")

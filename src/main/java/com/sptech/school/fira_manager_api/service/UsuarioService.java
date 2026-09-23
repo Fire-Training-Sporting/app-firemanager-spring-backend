@@ -1,6 +1,9 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.sptech.school.fira_manager_api.mapper.usuario.UsuarioMapper;
 import org.slf4j.Logger;
@@ -8,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +42,9 @@ public class UsuarioService {
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final AuthenticationManager authenticationManager;
     private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
+    private static final int MAX_TENTATIVAS = 5;
+    private static final int MINUTOS_BLOQUEADOS = 15;
+    private final Map<String, ControleLoginService> controleLogins = new ConcurrentHashMap<>();
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           TipoUsuarioRepository tipoUsuarioRepository,
@@ -102,32 +109,52 @@ public class UsuarioService {
     }
 
     public UsuarioTokenResponse logarUsuario(LoginRequest dto) {
-        Authentication autenticacao = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha())
-        );
 
-        SecurityContextHolder.getContext().setAuthentication(autenticacao);
+        ControleLoginService controle = controleLogins.computeIfAbsent(dto.getEmail(), email -> new ControleLoginService());
 
-        Object principal = autenticacao.getPrincipal();
-        UsuarioDetalhesDto usuarioDetalhes;
-
-        if (principal instanceof UsuarioDetalhesDto) {
-            usuarioDetalhes = (UsuarioDetalhesDto) principal;
-        } else {
-            String email = principal.toString();
-            Usuario usuarioEntity = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado após autenticação"));
-            usuarioDetalhes = new UsuarioDetalhesDto(usuarioEntity);
+        if (controle.estaBloqueado()) {
+            throw new ResponseStatusException(HttpStatus.LOCKED, "Conta bloqueada. Tente novamente mais tarde.");
         }
 
-        String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
+        try {
+            Authentication autenticacao = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha())
+            );
 
-        Usuario usuario = usuarioDetalhes.getUsuario();
+            SecurityContextHolder.getContext().setAuthentication(autenticacao);
 
-        log.info("Login realizado - email={}",
-                dto.getEmail());
+            controle.resetar();
 
-        return UsuarioMapper.toTokenResponse(usuario, token);
+            Object principal = autenticacao.getPrincipal();
+            UsuarioDetalhesDto usuarioDetalhes;
+
+            if (principal instanceof UsuarioDetalhesDto) {
+                usuarioDetalhes = (UsuarioDetalhesDto) principal;
+            } else {
+                String email = principal.toString();
+                Usuario usuarioEntity = usuarioRepository.findByEmail(email)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado após autenticação"));
+                usuarioDetalhes = new UsuarioDetalhesDto(usuarioEntity);
+            }
+
+            String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
+
+            Usuario usuario = usuarioDetalhes.getUsuario();
+
+            log.info("Login realizado - email={}", dto.getEmail());
+
+            return UsuarioMapper.toTokenResponse(usuario, token);
+
+        } catch (BadCredentialsException e) {
+
+            controle.incrementar();
+
+            if (controle.getTentativas() >= MAX_TENTATIVAS) {
+                controle.bloquear(LocalDateTime.now().plusMinutes(MINUTOS_BLOQUEADOS));
+            }
+
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+        }
     }
 
     public List<UsuarioResponse> buscarUsuarios() {
