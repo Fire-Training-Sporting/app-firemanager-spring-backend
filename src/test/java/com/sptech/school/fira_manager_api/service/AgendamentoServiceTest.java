@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -751,11 +752,17 @@ class AgendamentoServiceTest {
             Servico servico = criarServico();
             Condominio condominio = criarCondominio();
 
-            Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
+            Agendamento agendamento = criarAgendamentoSalvo(
+                    aluno,
+                    professor,
+                    servico,
+                    condominio
+            );
 
-            // Dentro das próximas 24h
-            agendamento.setData(LocalDate.now());
-            agendamento.setHoraInicio(LocalTime.now().plusHours(2));
+            LocalDateTime dataHoraAgendamento = LocalDateTime.now().plusHours(2);
+
+            agendamento.setData(dataHoraAgendamento.toLocalDate());
+            agendamento.setHoraInicio(dataHoraAgendamento.toLocalTime());
             agendamento.setStatus("pendente");
 
             when(agendamentoRepository.findByStatusIn(List.of("pendente")))
@@ -766,9 +773,11 @@ class AgendamentoServiceTest {
 
             agendamentoService.confirmarAgendamentosAutomaticamente();
 
-            verify(agendamentoRepository).save(agendamento);
             assertEquals("confirmado", agendamento.getStatus());
+
+            verify(agendamentoRepository).save(agendamento);
         }
+
 
         @Test
         @DisplayName("Confirmar Agendamento Automático - Agendamento fora do limite (não confirma)")
