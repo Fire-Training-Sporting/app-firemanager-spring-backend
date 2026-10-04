@@ -2,6 +2,9 @@ package com.sptech.school.fira_manager_api.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +21,7 @@ import com.sptech.school.fira_manager_api.dto.requests.usuario.LoginRequest;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.UsuarioRequest;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.service.UsuarioService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -71,12 +75,11 @@ public class UsuarioController {
             @ApiResponse(responseCode = "400", description = "Requisição inválida", content = @Content)
     })
     @GetMapping
-    public ResponseEntity<List<UsuarioResponse>> buscarUsuarios(@RequestParam(required = false) String nome) {
-        if (nome == null) {
-            return ResponseEntity.ok(usuarioService.buscarUsuarios());
-        } else {
-            return ResponseEntity.ok(usuarioService.buscarUsuarioPorNome(nome));
-        }
+        public ResponseEntity<PaginaResponse<UsuarioResponse>> buscarUsuarios(
+                        @RequestParam(required = false) String nome,
+                        @RequestParam(required = false) List<Long> tipoUsuarioId,
+                        @PageableDefault(size = 10, sort = {"nome", "id"}, direction = Sort.Direction.ASC) Pageable pageable) {
+                return ResponseEntity.ok(usuarioService.buscarUsuarios(pageable, nome, tipoUsuarioId));
     }
 
     @Operation(summary = "Busca usuário por ID", description = "Retorna os dados de um usuário específico pelo ID")

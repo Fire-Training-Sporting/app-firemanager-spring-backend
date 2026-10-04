@@ -5,6 +5,10 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,6 +22,7 @@ import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioRes
 import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.ProfessorResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Agendamento;
@@ -319,11 +324,10 @@ public class AgendamentoService {
         return agendamentosCriados;
     }
 
-    public List<AgendamentoResponse> listarAgendamento() {
-        return agendamentoRepository.findAll()
-                .stream()
-                .map(this::toAgendamentoResponse)
-                .toList();
+    public PaginaResponse<AgendamentoResponse> listarAgendamento(Pageable pageable) {
+        Page<AgendamentoResponse> pagina = agendamentoRepository.findAll(comOrdenacaoEstavel(pageable))
+                .map(this::toAgendamentoResponse);
+        return PaginaResponse.from(pagina);
     }
 
     public AgendamentoResponse listarAgendamentoPorId(Long id) {
@@ -450,11 +454,19 @@ public class AgendamentoService {
         return toAgendamentoResponse(agendamento);
     }
 
-    public List<AgendamentoResponse> buscarAgendamentoPorStatus(String status) {
-        return agendamentoRepository.findAllByStatus(status)
-                .stream()
-                .map(this::toAgendamentoResponse)
-                .toList();
+    public PaginaResponse<AgendamentoResponse> buscarAgendamentoPorStatus(String status, Pageable pageable) {
+        Page<AgendamentoResponse> pagina = agendamentoRepository
+                .findAllByStatus(status, comOrdenacaoEstavel(pageable))
+                .map(this::toAgendamentoResponse);
+        return PaginaResponse.from(pagina);
+    }
+
+    private Pageable comOrdenacaoEstavel(Pageable pageable) {
+        Sort sort = pageable.getSort();
+        if (sort.getOrderFor("id") == null) {
+            sort = sort.and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
     public void deletarAgendamentoPorId(Long id) {

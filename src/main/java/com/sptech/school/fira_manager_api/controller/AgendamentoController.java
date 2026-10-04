@@ -1,8 +1,11 @@
 package com.sptech.school.fira_manager_api.controller;
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,6 +20,7 @@ import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRe
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.service.AgendamentoService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -94,12 +98,14 @@ public class AgendamentoController {
             )
     })
     @GetMapping
-    public ResponseEntity<List<AgendamentoResponse>> listarAgendamentos(@RequestParam (required = false) String status){
+        public ResponseEntity<PaginaResponse<AgendamentoResponse>> listarAgendamentos(
+                        @RequestParam(required = false) String status,
+                        @PageableDefault(size = 10, sort = {"data", "horaInicio", "id"}, direction = Sort.Direction.ASC) Pageable pageable) {
 
         if (status != null) {
-            return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.buscarAgendamentoPorStatus(status));
+                        return ResponseEntity.ok(agendamentoService.buscarAgendamentoPorStatus(status, pageable));
         }
-        return ResponseEntity.status(HttpStatus.OK).body(agendamentoService.listarAgendamento());
+                return ResponseEntity.ok(agendamentoService.listarAgendamento(pageable));
     }
 
 

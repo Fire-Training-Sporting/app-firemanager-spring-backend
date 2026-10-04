@@ -2,6 +2,10 @@ package com.sptech.school.fira_manager_api.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +24,7 @@ import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioRes
 import com.sptech.school.fira_manager_api.dto.responses.tipoUsuario.TipoUsuarioResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
@@ -148,11 +153,22 @@ public class UsuarioService {
         return new UsuarioTokenResponse(usuario.getId(), usuario.getNome(), usuario.getEmail(), cargo, token);
     }
 
-    public List<UsuarioResponse> buscarUsuarios() {
-        return usuarioRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(Pageable pageable, String nome, List<Long> tipoUsuarioIds) {
+        Pageable pageableEstavel = comOrdenacaoEstavel(pageable);
+        String nomeNormalizado = nome == null || nome.isBlank() ? null : nome.trim();
+
+        Page<Usuario> usuarios;
+        if (tipoUsuarioIds != null && !tipoUsuarioIds.isEmpty()) {
+            usuarios = nomeNormalizado == null
+                    ? usuarioRepository.findByTipoUsuario_IdIn(tipoUsuarioIds, pageableEstavel)
+                    : usuarioRepository.findByTipoUsuario_IdInAndNomeContainingIgnoreCase(tipoUsuarioIds, nomeNormalizado, pageableEstavel);
+        } else {
+            usuarios = nomeNormalizado == null
+                    ? usuarioRepository.findAll(pageableEstavel)
+                    : usuarioRepository.findByNomeContainingIgnoreCase(nomeNormalizado, pageableEstavel);
+        }
+
+        return PaginaResponse.from(usuarios.map(this::toResponse));
     }
 
     public UsuarioResponse buscarUsuarioPorId(Long id) {
@@ -161,11 +177,12 @@ public class UsuarioService {
         return toResponse(usuario);
     }
 
-    public List<UsuarioResponse> buscarUsuarioPorNome(String nome) {
-        return usuarioRepository.findByNomeContainingIgnoreCase(nome)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    private Pageable comOrdenacaoEstavel(Pageable pageable) {
+        Sort sort = pageable.getSort();
+        if (sort.getOrderFor("id") == null) {
+            sort = sort.and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
     public UsuarioResponse atualizarUsuarioPorId(Long id, UsuarioRequest dto) {
