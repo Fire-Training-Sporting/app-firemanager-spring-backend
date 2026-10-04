@@ -1,5 +1,6 @@
 package com.sptech.school.fira_manager_api.dto.requests.condominio;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -25,12 +26,16 @@ public class CondominioRequest {
     @Schema(description = "Rua do Condomínio", example = "Rua Santo Antônio", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "Rua é obrigatória")
     @Size(max = 150, message = "Rua deve ter no máximo 150 caracteres")
+    @JsonAlias("logradouro")
     private String rua;
 
     @Schema(description = "Número do Condomínio", example = "571", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "Número é obrigatório")
     @Size(max = 10, message = "Número deve ter no máximo 10 caracteres")
     private String numero;
+
+    @Size(max = 9, message = "CEP deve ter no máximo 9 caracteres")
+    private String cep;
 
     public String getNome() {
         return nome;
@@ -70,5 +75,13 @@ public class CondominioRequest {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 }

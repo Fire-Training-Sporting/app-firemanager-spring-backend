@@ -5,10 +5,11 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.sptech.school.fira_manager_api.model.Agendamento;
 
-public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
+public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>, JpaSpecificationExecutor<Agendamento> {
    Page<Agendamento> findAllByStatus(String status, Pageable pageable);
    Long countByProfessorIdAndStatus(Long id, String status);
    Long countByAuxiliarIdAndStatus(Long id, String status);

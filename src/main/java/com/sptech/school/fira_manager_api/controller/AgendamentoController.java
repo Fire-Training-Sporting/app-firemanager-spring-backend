@@ -1,4 +1,5 @@
 package com.sptech.school.fira_manager_api.controller;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,7 @@ import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRe
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.agendamento.HistoricoAulasResponse;
 import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.service.AgendamentoService;
 
@@ -31,6 +33,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @RestController
 @RequestMapping("/api/agendamentos")
@@ -100,13 +103,22 @@ public class AgendamentoController {
     @GetMapping
         public ResponseEntity<PaginaResponse<AgendamentoResponse>> listarAgendamentos(
                         @RequestParam(required = false) String status,
-                        @PageableDefault(size = 10, sort = {"data", "horaInicio", "id"}, direction = Sort.Direction.ASC) Pageable pageable) {
+                                                @RequestParam(required = false) String campo,
+                                                @RequestParam(required = false) String busca,
+                        @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        if (status != null) {
-                        return ResponseEntity.ok(agendamentoService.buscarAgendamentoPorStatus(status, pageable));
-        }
-                return ResponseEntity.ok(agendamentoService.listarAgendamento(pageable));
+        return ResponseEntity.ok(agendamentoService.buscarAgendamentosPaginados(pageable, status, campo, busca));
     }
+
+        @GetMapping("/historico-pagamentos")
+        public ResponseEntity<HistoricoAulasResponse> buscarHistoricoPagamentos(
+                        @RequestParam Long participanteId,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+                        @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+                return ResponseEntity.ok(agendamentoService.buscarHistoricoAulasPaginado(
+                                participanteId, dataInicio, dataFim, pageable));
+        }
 
 
     @Operation(summary = "Busca agendamento por ID", description = "Retorna os dados de um agendamento específico pelo ID")

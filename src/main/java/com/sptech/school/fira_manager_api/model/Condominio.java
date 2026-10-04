@@ -26,6 +26,9 @@ public class Condominio {
     @Column(nullable = false)
     private String numero;
 
+    @Column(length = 9)
+    private String cep;
+
     public Condominio() {
     }
 
@@ -91,5 +94,13 @@ public class Condominio {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 }

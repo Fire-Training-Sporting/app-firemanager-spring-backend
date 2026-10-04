@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
         "aluno",
         "professor",
         "auxiliar",
+        "rebatedor",
         "status",
         "servico",
         "saldo",
@@ -47,6 +48,9 @@ public class AgendamentoResponse {
 
     @Schema(description = "Professor auxiliar do Agendamento", required = false)
     private ProfessorResponse auxiliar;
+
+    @Schema(description = "Rebatedor do Agendamento", required = false)
+    private ProfessorResponse rebatedor;
 
     @Schema(description = "Serviço do Agendamento", required = true)
     private ServicoResponse servico;
@@ -138,6 +142,14 @@ public class AgendamentoResponse {
 
     public void setAuxiliar(ProfessorResponse auxiliar) {
         this.auxiliar = auxiliar;
+    }
+
+    public ProfessorResponse getRebatedor() {
+        return rebatedor;
+    }
+
+    public void setRebatedor(ProfessorResponse rebatedor) {
+        this.rebatedor = rebatedor;
     }
 
     public ServicoResponse getServico() {

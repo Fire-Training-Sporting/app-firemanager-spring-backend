@@ -78,8 +78,12 @@ public class UsuarioController {
         public ResponseEntity<PaginaResponse<UsuarioResponse>> buscarUsuarios(
                         @RequestParam(required = false) String nome,
                         @RequestParam(required = false) List<Long> tipoUsuarioId,
-                        @PageableDefault(size = 10, sort = {"nome", "id"}, direction = Sort.Direction.ASC) Pageable pageable) {
-                return ResponseEntity.ok(usuarioService.buscarUsuarios(pageable, nome, tipoUsuarioId));
+                                @RequestParam(required = false) List<String> tipoUsuarioCargo,
+                                @RequestParam(required = false) String campo,
+                                @RequestParam(required = false) String busca,
+                        @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+                        return ResponseEntity.ok(usuarioService.buscarUsuarios(
+                                pageable, nome, tipoUsuarioId, tipoUsuarioCargo, campo, busca));
     }
 
     @Operation(summary = "Busca usuário por ID", description = "Retorna os dados de um usuário específico pelo ID")

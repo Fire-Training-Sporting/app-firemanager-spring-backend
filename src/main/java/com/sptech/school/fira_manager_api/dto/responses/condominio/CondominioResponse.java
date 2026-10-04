@@ -23,13 +23,21 @@ public class CondominioResponse {
     @Schema(description = "Número do Condomínio", example = "571")
     private String numero;
 
+    @Schema(description = "CEP do Condomínio", example = "08000-000")
+    private String cep;
+
     public CondominioResponse(Long id, String nome, String cidade, String bairro, String rua, String numero) {
+        this(id, nome, cidade, bairro, rua, numero, null);
+    }
+
+    public CondominioResponse(Long id, String nome, String cidade, String bairro, String rua, String numero, String cep) {
         this.id = id;
         this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
         this.rua = rua;
         this.numero = numero;
+        this.cep = cep;
     }
 
     public CondominioResponse(String nome, String cidade, String bairro, String rua, String numero) {
@@ -86,5 +94,13 @@ public class CondominioResponse {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 }

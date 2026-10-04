@@ -1,11 +1,17 @@
 package com.sptech.school.fira_manager_api.service;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.ArrayList;
+
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -153,22 +159,66 @@ public class UsuarioService {
         return new UsuarioTokenResponse(usuario.getId(), usuario.getNome(), usuario.getEmail(), cargo, token);
     }
 
-    public PaginaResponse<UsuarioResponse> buscarUsuarios(Pageable pageable, String nome, List<Long> tipoUsuarioIds) {
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(
+            Pageable pageable,
+            String nome,
+            List<Long> tipoUsuarioIds,
+            List<String> tipoUsuarioCargos,
+            String campo,
+            String busca) {
         Pageable pageableEstavel = comOrdenacaoEstavel(pageable);
-        String nomeNormalizado = nome == null || nome.isBlank() ? null : nome.trim();
+        String valorBusca = busca == null || busca.isBlank() ? nome : busca;
+        String campoBusca = campo == null || campo.isBlank() ? "nome" : campo;
+        String termo = valorBusca == null ? null : valorBusca.trim().toLowerCase(Locale.ROOT);
 
-        Page<Usuario> usuarios;
-        if (tipoUsuarioIds != null && !tipoUsuarioIds.isEmpty()) {
-            usuarios = nomeNormalizado == null
-                    ? usuarioRepository.findByTipoUsuario_IdIn(tipoUsuarioIds, pageableEstavel)
-                    : usuarioRepository.findByTipoUsuario_IdInAndNomeContainingIgnoreCase(tipoUsuarioIds, nomeNormalizado, pageableEstavel);
-        } else {
-            usuarios = nomeNormalizado == null
-                    ? usuarioRepository.findAll(pageableEstavel)
-                    : usuarioRepository.findByNomeContainingIgnoreCase(nomeNormalizado, pageableEstavel);
+        if (termo != null && !termo.isBlank()
+                && !List.of("id", "nome", "email", "telefone", "endereco", "tipoUsuario.cargo")
+                        .contains(campoBusca)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
         }
 
+        Specification<Usuario> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (tipoUsuarioIds != null && !tipoUsuarioIds.isEmpty()) {
+                predicates.add(root.join("tipoUsuario").get("id").in(tipoUsuarioIds));
+            }
+
+            if (tipoUsuarioCargos != null && !tipoUsuarioCargos.isEmpty()) {
+                List<String> cargosNormalizados = tipoUsuarioCargos.stream()
+                        .filter(cargo -> cargo != null && !cargo.isBlank())
+                        .map(cargo -> cargo.trim().toLowerCase(Locale.ROOT))
+                        .toList();
+                if (!cargosNormalizados.isEmpty()) {
+                    predicates.add(criteriaBuilder.lower(root.join("tipoUsuario").get("cargo"))
+                            .in(cargosNormalizados));
+                }
+            }
+
+            if (termo != null && !termo.isBlank()) {
+                String padrao = "%" + termo + "%";
+                switch (campoBusca) {
+                    case "id" -> predicates.add(criteriaBuilder.like(
+                            root.get("id").as(String.class), padrao));
+                    case "nome", "email", "telefone" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get(campoBusca)), padrao));
+                    case "endereco" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("condominio", JoinType.LEFT).get("nome")), padrao));
+                    case "tipoUsuario.cargo" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("tipoUsuario").get("cargo")), padrao));
+                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
+                }
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Usuario> usuarios = usuarioRepository.findAll(specification, pageableEstavel);
         return PaginaResponse.from(usuarios.map(this::toResponse));
+    }
+
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(Pageable pageable, String nome, List<Long> tipoUsuarioIds) {
+        return buscarUsuarios(pageable, nome, tipoUsuarioIds, null, null, null);
     }
 
     public UsuarioResponse buscarUsuarioPorId(Long id) {
@@ -178,9 +228,12 @@ public class UsuarioService {
     }
 
     private Pageable comOrdenacaoEstavel(Pageable pageable) {
-        Sort sort = pageable.getSort();
-        if (sort.getOrderFor("id") == null) {
-            sort = sort.and(Sort.by(Sort.Direction.ASC, "id"));
+        List<Sort.Order> outrasOrdenacoes = pageable.getSort().stream()
+                .filter(order -> !order.getProperty().equals("id"))
+                .toList();
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        if (!outrasOrdenacoes.isEmpty()) {
+            sort = sort.and(Sort.by(outrasOrdenacoes));
         }
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
