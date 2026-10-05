@@ -4,6 +4,7 @@ import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.UsuarioDetalhesDto;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.LoginRequest;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.UsuarioRequest;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +29,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -512,12 +518,23 @@ class UsuarioServiceTest {
             usuario2.setTelefone("11912345678");
             usuario2.setTipoUsuario(tipo);
 
-            when(usuarioRepository.findAll()).thenReturn(List.of(usuario1, usuario2));
+            Pageable pageable = PageRequest.of(1, 5);
+            when(usuarioRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(usuario1, usuario2), pageable, 12));
 
-            List<UsuarioResponse> response = usuarioService.buscarUsuarios();
+            PaginaResponse<UsuarioResponse> response =
+                    usuarioService.buscarUsuarios(pageable, null, null);
 
             assertNotNull(response);
-            assertEquals(2, response.size());
+            assertEquals(2, response.content().size());
+            assertEquals(1, response.page());
+            assertEquals(5, response.size());
+            assertEquals(12, response.totalElements());
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(usuarioRepository).findAll(any(Specification.class), pageableCaptor.capture());
+            assertEquals(1, pageableCaptor.getValue().getPageNumber());
+            assertEquals(5, pageableCaptor.getValue().getPageSize());
+            assertNotNull(pageableCaptor.getValue().getSort().getOrderFor("id"));
         }
 
         @Test
@@ -567,14 +584,20 @@ class UsuarioServiceTest {
             usuario.setTelefone("11935234123");
             usuario.setTipoUsuario(tipo);
 
-            when(usuarioRepository.findByNomeContainingIgnoreCase("Marcos"))
-                    .thenReturn(List.of(usuario));
+            Pageable pageable = PageRequest.of(0, 10);
+            when(usuarioRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(usuario), pageable, 1));
 
-            List<UsuarioResponse> response = usuarioService.buscarUsuarioPorNome("Marcos");
+            PaginaResponse<UsuarioResponse> response =
+                    usuarioService.buscarUsuarios(pageable, "Marcos", null);
 
             assertNotNull(response);
-            assertEquals(1, response.size());
-            assertEquals("Marcos Vinicius", response.get(0).getNome());
+            assertEquals(1, response.content().size());
+            assertEquals("Marcos Vinicius", response.content().get(0).getNome());
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(usuarioRepository).findAll(any(Specification.class), pageableCaptor.capture());
+            assertEquals(0, pageableCaptor.getValue().getPageNumber());
+            assertEquals(10, pageableCaptor.getValue().getPageSize());
         }
     }
 
