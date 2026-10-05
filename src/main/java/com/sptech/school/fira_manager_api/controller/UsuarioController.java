@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -93,6 +94,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content)
     })
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMINISTRACAO') or (hasRole('ALUNO') and @segurancaAutorizacao.usuarioAtualEh(#p0)) or (hasRole('PROFESSOR') and @segurancaAutorizacao.usuarioEhAluno(#p0))")
     public ResponseEntity<UsuarioResponse> buscarUsuarioPorId(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.buscarUsuarioPorId(id));
     }
@@ -105,6 +107,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content)
     })
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMINISTRACAO') or (hasRole('ALUNO') and @segurancaAutorizacao.usuarioAtualEh(#p0))")
     public ResponseEntity<UsuarioResponse> atualizarUsuarioPorId(@PathVariable Long id, @Valid @RequestBody UsuarioRequest dto) {
         return ResponseEntity.ok(usuarioService.atualizarUsuarioPorId(id, dto));
     }

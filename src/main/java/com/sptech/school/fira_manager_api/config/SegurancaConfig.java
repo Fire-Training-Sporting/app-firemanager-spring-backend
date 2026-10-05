@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -12,6 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SegurancaConfig {
 
     private final AutenticacaoEntryPoint autenticacaoEntryPoint;
@@ -43,7 +45,34 @@ public class SegurancaConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/usuarios/login").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/usuarios")
-                            .hasAnyRole("ADMINISTRACAO", "ROOT") // PASSAR ESSA CONFIG
+                            .hasAnyRole("ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/usuarios")
+                            .hasAnyRole("PROFESSOR", "ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/usuarios/*")
+                            .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/usuarios/*")
+                            .hasAnyRole("ALUNO", "ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/usuarios/*")
+                            .hasAnyRole("ADMINISTRACAO", "ROOT")
+                        .requestMatchers("/api/permissoes/**").hasRole("ROOT")
+                        .requestMatchers("/api/tipo-usuarios/**").hasAnyRole("ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/agendamentos/historico-pagamentos")
+                            .hasAnyRole("PROFESSOR", "ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/agendamentos/**")
+                            .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRACAO", "ROOT")
+                        .requestMatchers("/api/agendamentos/**")
+                            .hasAnyRole("ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/condominios/**")
+                            .hasAnyRole("PROFESSOR", "ADMINISTRACAO", "ROOT")
+                        .requestMatchers("/api/condominios/**")
+                            .hasAnyRole("ADMINISTRACAO", "ROOT")
+                        .requestMatchers("/api/servicos/**")
+                            .hasAnyRole("ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/saldos/professor/*")
+                            .hasAnyRole("PROFESSOR", "ADMINISTRACAO", "ROOT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/saldos/**")
+                            .hasAnyRole("ADMINISTRACAO", "ROOT")
+                        .requestMatchers("/api/saldos/**").hasAnyRole("ADMINISTRACAO", "ROOT")
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()

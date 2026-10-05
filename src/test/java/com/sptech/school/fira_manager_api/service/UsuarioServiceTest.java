@@ -13,6 +13,7 @@ import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,11 @@ class UsuarioServiceTest {
     @InjectMocks
     private UsuarioService usuarioService;
 
+    @AfterEach
+    void limparAutenticacao() {
+        SecurityContextHolder.clearContext();
+    }
+
     private void mockAutenticacaoAdmin() {
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 "admin",
@@ -66,7 +72,7 @@ class UsuarioServiceTest {
         void cadastrarUsuarioFuncionario() {
             mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
-            request.setTipoUsuario(1L);
+            request.setTipoUsuario(3L);
             request.setNome("Marcos Vinicius");
             request.setEmail("marcos@gmail.com");
             request.setTelefone("11935234123");
@@ -77,9 +83,9 @@ class UsuarioServiceTest {
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
             TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(1L);
-            tipo.setCargo("root");
-            when(tipoUsuarioRepository.findById(1L)).thenReturn(Optional.of(tipo));
+            tipo.setId(3L);
+            tipo.setCargo("professor");
+            when(tipoUsuarioRepository.findById(3L)).thenReturn(Optional.of(tipo));
 
             when(passwordEncoder.encode("teste123*")).thenReturn("luanWasHere");
 
@@ -92,6 +98,39 @@ class UsuarioServiceTest {
             assertEquals("Marcos Vinicius", response.getNome());
             assertEquals("marcos@gmail.com", response.getEmail());
             assertEquals("11935234123", response.getTelefone());
+        }
+
+        @Test
+        @DisplayName("Administracao pode criar usuários root")
+        void administracaoPodeCriarRoot() {
+            mockAutenticacaoAdmin();
+            UsuarioRequest request = new UsuarioRequest();
+            request.setTipoUsuario(1L);
+            request.setNome("Novo root");
+            request.setEmail("root@gmail.com");
+            request.setTelefone("11935234123");
+            request.setSenha("teste123*");
+
+            when(usuarioRepository.existsByNome("Novo root")).thenReturn(false);
+            when(usuarioRepository.existsByEmail("root@gmail.com")).thenReturn(false);
+            when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
+
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(1L);
+            tipo.setCargo("root");
+            when(tipoUsuarioRepository.findById(1L)).thenReturn(Optional.of(tipo));
+
+            when(passwordEncoder.encode("teste123*")).thenReturn("senhaCriptografada");
+            Usuario usuarioSalvo = new Usuario(tipo, "Novo root", "root@gmail.com",
+                    "11935234123", "senhaCriptografada");
+            usuarioSalvo.setId(1L);
+            when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
+
+            UsuarioResponse response = usuarioService.criarUsuario(request);
+
+            assertNotNull(response);
+            assertEquals("Novo root", response.getNome());
+            verify(usuarioRepository).save(any(Usuario.class));
         }
 
         @Test
@@ -745,16 +784,42 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deletar Usuário")
         void deletarUsuario() {
-            when(usuarioRepository.existsById(1L)).thenReturn(true);
+            mockAutenticacaoAdmin();
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(3L);
+            tipo.setCargo("professor");
+            Usuario usuario = new Usuario();
+            usuario.setId(1L);
+            usuario.setTipoUsuario(tipo);
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
 
             usuarioService.deletarUsuarioPorId(1L);
-            verify(usuarioRepository).deleteById(1L);
+            verify(usuarioRepository).delete(usuario);
+        }
+
+        @Test
+        @DisplayName("Administracao não pode remover usuário root")
+        void administracaoNaoPodeRemoverRoot() {
+            mockAutenticacaoAdmin();
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(1L);
+            tipo.setCargo("root");
+            Usuario usuario = new Usuario();
+            usuario.setId(1L);
+            usuario.setTipoUsuario(tipo);
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.deletarUsuarioPorId(1L));
+
+            assertEquals(403, exception.getStatusCode().value());
+            verify(usuarioRepository, never()).delete(any(Usuario.class));
         }
 
         @Test
         @DisplayName("Falha Deletar Usuário")
         void deletarUsuarioFalho() {
-            when(usuarioRepository.existsById(300L)).thenReturn(false);
+            when(usuarioRepository.findById(300L)).thenReturn(Optional.empty());
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> usuarioService.deletarUsuarioPorId(300L)

@@ -4,6 +4,7 @@ import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRe
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
 import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
+import com.sptech.school.fira_manager_api.config.SegurancaAutorizacao;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
 import com.sptech.school.fira_manager_api.model.*;
 import com.sptech.school.fira_manager_api.repository.*;
@@ -36,6 +37,7 @@ class AgendamentoServiceTest {
     @Mock private SaldoRepository saldoRepository;
     @Mock private SaldoTransacaoRepository saldoTransacaoRepository;
     @Mock private NotificationServiceClient client;
+    @Mock private SegurancaAutorizacao segurancaAutorizacao;
 
     @InjectMocks
     private AgendamentoService agendamentoService;

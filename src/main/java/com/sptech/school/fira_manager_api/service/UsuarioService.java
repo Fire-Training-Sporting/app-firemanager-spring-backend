@@ -209,6 +209,14 @@ public class UsuarioService {
                 }
             }
 
+            Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+            boolean professor = autenticacao != null && autenticacao.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_PROFESSOR"));
+            if (professor) {
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.join("tipoUsuario").get("cargo")), "aluno"));
+            }
+
             if (termo != null && !termo.isBlank()) {
                 String padrao = "%" + termo + "%";
                 switch (campoBusca) {
@@ -256,6 +264,17 @@ public class UsuarioService {
         Usuario usuarioNovo = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
 
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        boolean alunoAtualizandoPerfil = autenticacao != null && autenticacao.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ALUNO"));
+        if (alunoAtualizandoPerfil
+                && (!dto.getTipoUsuario().equals(usuarioNovo.getTipoUsuario().getId())
+                    || !java.util.Objects.equals(dto.getCondominio(),
+                            usuarioNovo.getCondominio() == null ? null : usuarioNovo.getCondominio().getId()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Alunos não podem alterar o próprio tipo de usuário ou condomínio");
+        }
+
         TipoUsuario tipoUsuario = tipoUsuarioRepository.findById(dto.getTipoUsuario())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tipo de usuário não encontrado"));
 
@@ -281,13 +300,25 @@ public class UsuarioService {
     }
 
     public void deletarUsuarioPorId(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe");
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
+
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        if (administracaoNaoPodeRemoverCargo(autenticacao, usuario.getTipoUsuario())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Somente root pode remover usuários root ou de administração");
         }
 
-        usuarioRepository.deleteById(id);
+        usuarioRepository.delete(usuario);
 
         log.info("Usuário deletado - id={}",
                 id);
+    }
+
+    private boolean administracaoNaoPodeRemoverCargo(Authentication autenticacao, TipoUsuario tipoUsuario) {
+        boolean administracao = autenticacao != null && autenticacao.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMINISTRACAO"));
+        String cargo = tipoUsuario.getCargo();
+        return administracao && (cargo.equalsIgnoreCase("root") || cargo.equalsIgnoreCase("administracao"));
     }
 }

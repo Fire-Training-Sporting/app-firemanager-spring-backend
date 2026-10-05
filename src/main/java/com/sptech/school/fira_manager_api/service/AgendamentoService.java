@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
+import com.sptech.school.fira_manager_api.config.SegurancaAutorizacao;
 import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailAlunoNotification;
 import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailProfessorNotification;
 import org.slf4j.Logger;
@@ -61,9 +62,10 @@ public class AgendamentoService {
     private final SaldoRepository saldoRepository;
     private final SaldoTransacaoRepository saldoTransacaoRepository;
     private final NotificationServiceClient client;
+    private final SegurancaAutorizacao segurancaAutorizacao;
     private static final Logger log = LoggerFactory.getLogger(AgendamentoService.class);
 
-    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, NotificationServiceClient client) {
+    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, NotificationServiceClient client, SegurancaAutorizacao segurancaAutorizacao) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.condominioRepository = condominioRepository;
@@ -71,6 +73,7 @@ public class AgendamentoService {
         this.saldoRepository = saldoRepository;
         this.saldoTransacaoRepository = saldoTransacaoRepository;
         this.client = client;
+        this.segurancaAutorizacao = segurancaAutorizacao;
     }
 
     private void deduzirSaldo(Saldo saldo, Double custo) {
@@ -499,6 +502,20 @@ public class AgendamentoService {
 
         Specification<Agendamento> specification = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (segurancaAutorizacao.usuarioAtualTemRole("ROLE_ALUNO")) {
+                Long usuarioId = segurancaAutorizacao.usuarioAtualId();
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.equal(root.join("aluno", JoinType.LEFT).get("id"), usuarioId),
+                        criteriaBuilder.equal(root.join("alunos", JoinType.LEFT).get("id"), usuarioId)));
+                query.distinct(true);
+            } else if (segurancaAutorizacao.usuarioAtualTemRole("ROLE_PROFESSOR")) {
+                Long usuarioId = segurancaAutorizacao.usuarioAtualId();
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.equal(root.join("professor", JoinType.LEFT).get("id"), usuarioId),
+                        criteriaBuilder.equal(root.join("auxiliar", JoinType.LEFT).get("id"), usuarioId),
+                        criteriaBuilder.equal(root.join("rebatedor", JoinType.LEFT).get("id"), usuarioId)));
+            }
 
             if (status != null && !status.isBlank()) {
                 predicates.add(criteriaBuilder.equal(
