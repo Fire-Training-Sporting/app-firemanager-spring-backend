@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -76,7 +77,8 @@ class CondominioServiceTest {
         c2.setId(2L);
         c2.setNome("Condomínio B");
 
-        when(condominioRepository.findAll())
+        Sort sortEsperada = Sort.by(Sort.Direction.ASC, "id");
+        when(condominioRepository.findAll(sortEsperada))
                 .thenReturn(List.of(c1, c2));
 
         List<CondominioResponse> response =
@@ -84,7 +86,7 @@ class CondominioServiceTest {
 
         assertEquals(2, response.size());
 
-        verify(condominioRepository).findAll();
+        verify(condominioRepository).findAll(sortEsperada);
     }
 
     @Test
