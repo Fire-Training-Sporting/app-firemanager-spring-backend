@@ -2,15 +2,25 @@ package com.sptech.school.fira_manager_api.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
 import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailAlunoNotification;
 import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailProfessorNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.JoinType;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,6 +31,10 @@ import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRe
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.agendamento.HistoricoAulasResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.ProfessorResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.Saldo;
@@ -97,6 +111,54 @@ public class AgendamentoService {
         return AgendamentoMapper.toResponse(agendamento, saldo);
     }
 
+    private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento, Saldo saldo) {
+        ProfessorResponse professorResponse = toProfessorResponse(agendamento.getProfessor());
+        ServicoResponse servicoResponse = toServicoResponse(agendamento.getServico());
+        SaldoResponse saldoResponse = toSaldoResponse(saldo);
+        UsuarioResponse usuarioResponse = toUsuarioResponse(agendamento.getAluno());
+        CondominioResponse condominioResponse = toCondomioResponse(agendamento.getCondominio());
+
+        AgendamentoResponse response;
+        if (agendamento.getAuxiliar() != null) {
+            ProfessorResponse auxiliarResponse = toProfessorResponse(agendamento.getAuxiliar());
+
+            response = new AgendamentoResponse(
+                    agendamento.getId(),
+                    usuarioResponse,
+                    saldoResponse,
+                    professorResponse,
+                    auxiliarResponse,
+                    servicoResponse,
+                    condominioResponse,
+                    agendamento.getData(),
+                    agendamento.getHoraInicio(),
+                    agendamento.getObservacao(),
+                    agendamento.getCriadoEm(),
+                    agendamento.getAtualizadoEm(),
+                    agendamento.getStatus()
+            );
+        } else {
+            response = new AgendamentoResponse(
+                    agendamento.getId(),
+                    usuarioResponse,
+                    saldoResponse,
+                    professorResponse,
+                    servicoResponse,
+                    condominioResponse,
+                    agendamento.getData(),
+                    agendamento.getHoraInicio(),
+                    agendamento.getObservacao(),
+                    agendamento.getCriadoEm(),
+                    agendamento.getAtualizadoEm(),
+                    agendamento.getStatus()
+            );
+        }
+
+        response.setRebatedor(toProfessorResponse(agendamento.getRebatedor()));
+        return response;
+    }
+
+
     private Usuario buscarUsuario(Long id, String tipo) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, tipo + " não encontrado"));
@@ -143,6 +205,7 @@ public class AgendamentoService {
         Long alunoId,
         Long professorId,
         Long auxiliarId,
+        Long rebatedorId,
         Long servicoId,
         Long condominioId,
         AgendamentoRequest dto)   
@@ -150,7 +213,7 @@ public class AgendamentoService {
         agendamento.setAluno(buscarUsuario(alunoId, "Aluno"));
         agendamento.setProfessor(buscarUsuario(professorId, "Professor"));
         agendamento.setAuxiliar(buscarAuxiliar(auxiliarId));
-        agendamento.setRebatedor(buscarRebatedor(dto.getRebatedor()));
+        agendamento.setRebatedor(buscarRebatedor(rebatedorId));
         agendamento.setServico(buscarServico(servicoId));
         agendamento.setCondominio(buscarCondominio(condominioId));
         agendamento.setData(dto.getData());
@@ -385,6 +448,7 @@ public class AgendamentoService {
                 dto.getAluno(),
                 dto.getProfessor(),
                 dto.getAuxiliar(),
+                dto.getRebatedor(),
                 dto.getServico(),
                 dto.getCondominio(),
                 dto
@@ -442,6 +506,7 @@ public class AgendamentoService {
                     dto.getAluno(),
                     dto.getProfessor(),
                     dto.getAuxiliar(),
+                    null,
                     dto.getServico(),
                     dto.getCondominio(),
                     dto
@@ -464,11 +529,95 @@ public class AgendamentoService {
         return agendamentosCriados;
     }
 
-    public List<AgendamentoResponse> listarAgendamento() {
-        return agendamentoRepository.findAll()
-                .stream()
-                .map(this::toAgendamentoResponse)
-                .toList();
+    public PaginaResponse<AgendamentoResponse> listarAgendamento(Pageable pageable) {
+        Page<AgendamentoResponse> pagina = agendamentoRepository.findAll(comOrdenacaoEstavel(pageable))
+                .map(this::toAgendamentoResponse);
+        return PaginaResponse.from(pagina);
+    }
+
+    public PaginaResponse<AgendamentoResponse> buscarAgendamentosPaginados(
+            Pageable pageable, String status, String campo, String busca) {
+        String campoBusca = campo == null || campo.isBlank() ? "id" : campo;
+        String termo = busca == null || busca.isBlank() ? null : busca.trim().toLowerCase(Locale.ROOT);
+        List<String> camposPermitidos = List.of("aluno", "id", "data", "condominio", "professor", "status");
+
+        if (termo != null && !camposPermitidos.contains(campoBusca)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
+        }
+
+        Specification<Agendamento> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (status != null && !status.isBlank()) {
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.get("status")), status.trim().toLowerCase(Locale.ROOT)));
+            }
+
+            if (termo != null) {
+                String padrao = "%" + termo + "%";
+                switch (campoBusca) {
+                    case "id" -> predicates.add(criteriaBuilder.like(root.get("id").as(String.class), padrao));
+                    case "data" -> predicates.add(criteriaBuilder.like(root.get("data").as(String.class), padrao));
+                    case "status" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("status")), padrao));
+                    case "aluno" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("aluno").get("nome")), padrao));
+                    case "condominio" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("condominio").get("nome")), padrao));
+                    case "professor" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("professor").get("nome")), padrao));
+                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
+                }
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<AgendamentoResponse> pagina = agendamentoRepository
+                .findAll(specification, comOrdenacaoEstavel(pageable))
+                .map(this::toAgendamentoResponse);
+        return PaginaResponse.from(pagina);
+    }
+
+    public HistoricoAulasResponse buscarHistoricoAulasPaginado(
+            Long participanteId, LocalDate dataInicio, LocalDate dataFim, Pageable pageable) {
+        Specification<Agendamento> filtroDatas = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (dataInicio != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("data"), dataInicio));
+            }
+            if (dataFim != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("data"), dataFim));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Specification<Agendamento> filtroParticipacao = (root, query, criteriaBuilder) -> criteriaBuilder.or(
+                criteriaBuilder.equal(root.join("professor", JoinType.LEFT).get("id"), participanteId),
+                criteriaBuilder.equal(root.join("rebatedor", JoinType.LEFT).get("id"), participanteId),
+                criteriaBuilder.equal(root.join("auxiliar", JoinType.LEFT).get("id"), participanteId));
+
+        Specification<Agendamento> filtroHistorico = filtroDatas.and(filtroParticipacao);
+        Page<Agendamento> paginaAgendamentos = agendamentoRepository
+                .findAll(filtroHistorico, comOrdenacaoEstavel(pageable));
+
+        long aulasComoProfessor = agendamentoRepository.count(
+                filtroDatas.and((root, query, criteriaBuilder) ->
+                        criteriaBuilder.equal(root.join("professor", JoinType.LEFT).get("id"), participanteId)));
+        long aulasComoRebatedor = agendamentoRepository.count(
+                filtroDatas.and((root, query, criteriaBuilder) ->
+                        criteriaBuilder.equal(root.join("rebatedor", JoinType.LEFT).get("id"), participanteId)));
+        long aulasComoAuxiliar = agendamentoRepository.count(
+                filtroDatas.and((root, query, criteriaBuilder) ->
+                        criteriaBuilder.equal(root.join("auxiliar", JoinType.LEFT).get("id"), participanteId)));
+
+        PaginaResponse<AgendamentoResponse> paginaResponse = PaginaResponse.from(
+                paginaAgendamentos.map(this::toAgendamentoResponse));
+        return new HistoricoAulasResponse(
+                paginaResponse,
+                aulasComoProfessor,
+                aulasComoRebatedor,
+                aulasComoAuxiliar);
     }
 
     public AgendamentoResponse listarAgendamentoPorId(Long id) {
@@ -623,11 +772,22 @@ public class AgendamentoService {
         return toAgendamentoResponse(agendamento);
     }
 
-    public List<AgendamentoResponse> buscarAgendamentoPorStatus(String status) {
-        return agendamentoRepository.findAllByStatus(status)
-                .stream()
-                .map(this::toAgendamentoResponse)
+    public PaginaResponse<AgendamentoResponse> buscarAgendamentoPorStatus(String status, Pageable pageable) {
+        Page<AgendamentoResponse> pagina = agendamentoRepository
+                .findAllByStatus(status, comOrdenacaoEstavel(pageable))
+                .map(this::toAgendamentoResponse);
+        return PaginaResponse.from(pagina);
+    }
+
+    private Pageable comOrdenacaoEstavel(Pageable pageable) {
+        List<Sort.Order> outrasOrdenacoes = pageable.getSort().stream()
+                .filter(order -> !order.getProperty().equals("id"))
                 .toList();
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        if (!outrasOrdenacoes.isEmpty()) {
+            sort = sort.and(Sort.by(outrasOrdenacoes));
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
     public void deletarAgendamentoPorId(Long id) {

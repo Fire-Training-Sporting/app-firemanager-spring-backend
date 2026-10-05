@@ -8,6 +8,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.sptech.school.fira_manager_api.mapper.usuario.UsuarioMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Locale;
+import java.util.ArrayList;
+
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,6 +36,11 @@ import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.UsuarioDetalhesDto;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.LoginRequest;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.UsuarioRequest;
+import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.tipoUsuario.TipoUsuarioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
@@ -157,11 +173,66 @@ public class UsuarioService {
         }
     }
 
-    public List<UsuarioResponse> buscarUsuarios() {
-        return usuarioRepository.findAll()
-                .stream()
-                .map(UsuarioMapper::toResponse)
-                .toList();
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(
+            Pageable pageable,
+            String nome,
+            List<Long> tipoUsuarioIds,
+            List<String> tipoUsuarioCargos,
+            String campo,
+            String busca) {
+        Pageable pageableEstavel = comOrdenacaoEstavel(pageable);
+        String valorBusca = busca == null || busca.isBlank() ? nome : busca;
+        String campoBusca = campo == null || campo.isBlank() ? "nome" : campo;
+        String termo = valorBusca == null ? null : valorBusca.trim().toLowerCase(Locale.ROOT);
+
+        if (termo != null && !termo.isBlank()
+                && !List.of("id", "nome", "email", "telefone", "endereco", "tipoUsuario.cargo")
+                        .contains(campoBusca)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
+        }
+
+        Specification<Usuario> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (tipoUsuarioIds != null && !tipoUsuarioIds.isEmpty()) {
+                predicates.add(root.join("tipoUsuario").get("id").in(tipoUsuarioIds));
+            }
+
+            if (tipoUsuarioCargos != null && !tipoUsuarioCargos.isEmpty()) {
+                List<String> cargosNormalizados = tipoUsuarioCargos.stream()
+                        .filter(cargo -> cargo != null && !cargo.isBlank())
+                        .map(cargo -> cargo.trim().toLowerCase(Locale.ROOT))
+                        .toList();
+                if (!cargosNormalizados.isEmpty()) {
+                    predicates.add(criteriaBuilder.lower(root.join("tipoUsuario").get("cargo"))
+                            .in(cargosNormalizados));
+                }
+            }
+
+            if (termo != null && !termo.isBlank()) {
+                String padrao = "%" + termo + "%";
+                switch (campoBusca) {
+                    case "id" -> predicates.add(criteriaBuilder.like(
+                            root.get("id").as(String.class), padrao));
+                    case "nome", "email", "telefone" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get(campoBusca)), padrao));
+                    case "endereco" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("condominio", JoinType.LEFT).get("nome")), padrao));
+                    case "tipoUsuario.cargo" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("tipoUsuario").get("cargo")), padrao));
+                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
+                }
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Usuario> usuarios = usuarioRepository.findAll(specification, pageableEstavel);
+        return PaginaResponse.from(usuarios.map(this::toResponse));
+    }
+
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(Pageable pageable, String nome, List<Long> tipoUsuarioIds) {
+        return buscarUsuarios(pageable, nome, tipoUsuarioIds, null, null, null);
     }
 
     public UsuarioResponse buscarUsuarioPorId(Long id) {
@@ -170,11 +241,15 @@ public class UsuarioService {
         return UsuarioMapper.toResponse(usuario);
     }
 
-    public List<UsuarioResponse> buscarUsuarioPorNome(String nome) {
-        return usuarioRepository.findByNomeContainingIgnoreCase(nome)
-                .stream()
-                .map(UsuarioMapper::toResponse)
+    private Pageable comOrdenacaoEstavel(Pageable pageable) {
+        List<Sort.Order> outrasOrdenacoes = pageable.getSort().stream()
+                .filter(order -> !order.getProperty().equals("id"))
                 .toList();
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        if (!outrasOrdenacoes.isEmpty()) {
+            sort = sort.and(Sort.by(outrasOrdenacoes));
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
     public UsuarioResponse atualizarUsuarioPorId(Long id, UsuarioRequest dto) {
