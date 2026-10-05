@@ -84,7 +84,7 @@ public class CondominioService {
                 pageable.getPageSize(),
                 Sort.by(Sort.Direction.ASC, "id"));
         Page<CondominioResponse> pagina = condominioRepository.findAll(specification, pageablePorId)
-                .map(this::toResponse);
+            .map(CondominioMapper::toResponse);
         return PaginaResponse.from(pagina);
     }
 
