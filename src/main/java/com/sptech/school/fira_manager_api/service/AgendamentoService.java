@@ -111,54 +111,6 @@ public class AgendamentoService {
         return AgendamentoMapper.toResponse(agendamento, saldo);
     }
 
-    private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento, Saldo saldo) {
-        ProfessorResponse professorResponse = toProfessorResponse(agendamento.getProfessor());
-        ServicoResponse servicoResponse = toServicoResponse(agendamento.getServico());
-        SaldoResponse saldoResponse = toSaldoResponse(saldo);
-        UsuarioResponse usuarioResponse = toUsuarioResponse(agendamento.getAluno());
-        CondominioResponse condominioResponse = toCondomioResponse(agendamento.getCondominio());
-
-        AgendamentoResponse response;
-        if (agendamento.getAuxiliar() != null) {
-            ProfessorResponse auxiliarResponse = toProfessorResponse(agendamento.getAuxiliar());
-
-            response = new AgendamentoResponse(
-                    agendamento.getId(),
-                    usuarioResponse,
-                    saldoResponse,
-                    professorResponse,
-                    auxiliarResponse,
-                    servicoResponse,
-                    condominioResponse,
-                    agendamento.getData(),
-                    agendamento.getHoraInicio(),
-                    agendamento.getObservacao(),
-                    agendamento.getCriadoEm(),
-                    agendamento.getAtualizadoEm(),
-                    agendamento.getStatus()
-            );
-        } else {
-            response = new AgendamentoResponse(
-                    agendamento.getId(),
-                    usuarioResponse,
-                    saldoResponse,
-                    professorResponse,
-                    servicoResponse,
-                    condominioResponse,
-                    agendamento.getData(),
-                    agendamento.getHoraInicio(),
-                    agendamento.getObservacao(),
-                    agendamento.getCriadoEm(),
-                    agendamento.getAtualizadoEm(),
-                    agendamento.getStatus()
-            );
-        }
-
-        response.setRebatedor(toProfessorResponse(agendamento.getRebatedor()));
-        return response;
-    }
-
-
     private Usuario buscarUsuario(Long id, String tipo) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, tipo + " não encontrado"));
