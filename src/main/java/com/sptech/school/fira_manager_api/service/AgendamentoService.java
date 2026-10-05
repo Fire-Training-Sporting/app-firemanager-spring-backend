@@ -1,5 +1,6 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -7,6 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
+import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailAlunoNotification;
+import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailProfessorNotification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.JoinType;
 
@@ -24,9 +30,6 @@ import org.springframework.web.server.ResponseStatusException;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRecorrenteRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
-import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
-import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.servico.ServicoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.HistoricoAulasResponse;
 import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
@@ -36,15 +39,16 @@ import com.sptech.school.fira_manager_api.model.Agendamento;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.Saldo;
 import com.sptech.school.fira_manager_api.model.Servico;
+import com.sptech.school.fira_manager_api.model.TipoAgendamento;
 import com.sptech.school.fira_manager_api.model.Usuario;
-import com.sptech.school.fira_manager_api.observer.AgendamentoSubject;
-import com.sptech.school.fira_manager_api.observer.AlunoObserver;
-import com.sptech.school.fira_manager_api.observer.ProfessorObserver;
+import com.sptech.school.fira_manager_api.model.SaldoTransacao;
 import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import com.sptech.school.fira_manager_api.repository.SaldoRepository;
+import com.sptech.school.fira_manager_api.repository.SaldoTransacaoRepository;
 import com.sptech.school.fira_manager_api.repository.ServicoRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
+import com.sptech.school.fira_manager_api.mapper.agendamento.AgendamentoMapper;
 
 
 @Service
@@ -55,81 +59,56 @@ public class AgendamentoService {
     private final CondominioRepository condominioRepository;
     private final ServicoRepository servicoRepository;
     private final SaldoRepository saldoRepository;
-    private final EmailService emailService;
+    private final SaldoTransacaoRepository saldoTransacaoRepository;
+    private final NotificationServiceClient client;
+    private static final Logger log = LoggerFactory.getLogger(AgendamentoService.class);
 
-    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, EmailService emailService) {
+    public AgendamentoService(AgendamentoRepository agendamentoRepository, UsuarioRepository usuarioRepository, CondominioRepository condominioRepository, ServicoRepository servicoRepository, SaldoRepository saldoRepository, SaldoTransacaoRepository saldoTransacaoRepository, NotificationServiceClient client) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.condominioRepository = condominioRepository;
         this.servicoRepository = servicoRepository;
         this.saldoRepository = saldoRepository;
-        this.emailService = emailService;
+        this.saldoTransacaoRepository = saldoTransacaoRepository;
+        this.client = client;
     }
 
-    private ProfessorResponse toProfessorResponse(Usuario usuario) {
-        if (usuario == null) {
-            return null;
+    private void deduzirSaldo(Saldo saldo, Double custo) {
+        List<SaldoTransacao> transacoes = saldoTransacaoRepository
+                .findBySaldoIdAndQuantidadeRestanteGreaterThanAndDataExpiracaoGreaterThanEqualOrderByDataExpiracaoAsc(
+                        saldo.getId(), 0.0, LocalDate.now());
+
+        Double restante = custo;
+        for (SaldoTransacao t : transacoes) {
+            if (restante <= 0) break;
+            Double deducao = Math.min(t.getQuantidadeRestante(), restante);
+            t.setQuantidadeRestante(t.getQuantidadeRestante() - deducao);
+            restante -= deducao;
+            saldoTransacaoRepository.save(t);
         }
 
-        return new ProfessorResponse(
-                usuario.getId(),
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getTelefone()
-        );
+        saldo.setQuantidade(saldo.getQuantidade() - custo);
+        saldoRepository.save(saldo);
     }
 
-    private ServicoResponse toServicoResponse(Servico servico) {
-        if (servico == null) {
-            return null;
-        }
-
-        return new ServicoResponse(
-                servico.getId(),
-                servico.getNome()
-        );
-    }
-
-    private SaldoResponse toSaldoResponse(Saldo saldo) {
-        if (saldo == null) {
-            return null;
-        }
-
-        return new SaldoResponse(
-                saldo.getQuantidade(),
-                toServicoResponse(saldo.getServico())
-        );
-    }
-
-    private UsuarioResponse toUsuarioResponse(Usuario usuario) {
-        if (usuario == null) return null;
-
-        return new UsuarioResponse(
-                usuario.getId(),
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getTelefone()
-        );
-    }
-
-    private CondominioResponse toCondomioResponse(Condominio condominio) {
-        if (condominio == null) return null;
-
-        return new CondominioResponse(
-                condominio.getNome(),
-                condominio.getCidade(),
-                condominio.getBairro(),
-                condominio.getRua(),
-                condominio.getNumero()
-        );
+    private void estornarSaldo(Saldo saldo, Double custo) {
+        LocalDate hoje = LocalDate.now();
+        SaldoTransacao transacao = new SaldoTransacao(saldo, custo, hoje.plusMonths(3), hoje);
+        saldoTransacaoRepository.save(transacao);
+        saldo.setQuantidade(saldo.getQuantidade() + custo);
+        saldoRepository.save(saldo);
     }
 
     private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento) {
+        if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+            return AgendamentoMapper.toResponse(agendamento, null);
+        }
+
         Saldo saldo = saldoRepository
                 .findByAlunoIdAndServicoId(agendamento.getAluno().getId(), agendamento.getServico().getId())
                 .orElse(null);
 
-        return toAgendamentoResponse(agendamento, saldo);
+        return AgendamentoMapper.toResponse(agendamento, saldo);
     }
 
     private AgendamentoResponse toAgendamentoResponse(Agendamento agendamento, Saldo saldo) {
@@ -243,11 +222,71 @@ public class AgendamentoService {
     }
 
     private void notificar(Agendamento agendamento) {
-        AgendamentoSubject subject = new AgendamentoSubject();
 
-        subject.addObserver(new AlunoObserver(agendamento.getAluno().getId(), emailService));
-        subject.addObserver(new ProfessorObserver(agendamento.getProfessor().getId(), emailService));
-        subject.notifyObservers(agendamento);
+        List<Usuario> alunosParaNotificar = new ArrayList<>();
+
+        if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+            alunosParaNotificar.addAll(agendamento.getAlunos());
+        } else {
+            alunosParaNotificar.add(agendamento.getAluno());
+        }
+
+        for (Usuario aluno : alunosParaNotificar) {
+            EmailAlunoNotification emailAluno = new EmailAlunoNotification(
+                    agendamento.getId(),
+                    agendamento.getProfessor().getNome(),
+                    agendamento.getData(),
+                    agendamento.getHoraInicio(),
+                    agendamento.getStatus(),
+                    aluno.getEmail()
+            );
+
+            client.notificarAluno(emailAluno);
+            log.info("Notificação de aluno publicada na fila - agendamentoId={}, aluno={}",
+                    agendamento.getId(), aluno.getEmail());
+        }
+
+        String nomesDosAlunos = "";
+
+        for (Usuario aluno : alunosParaNotificar) {
+            if (!nomesDosAlunos.isEmpty()) {
+                nomesDosAlunos += ", ";
+            }
+            nomesDosAlunos += aluno.getNome();
+        }
+
+        String telefoneParaMostrar;
+
+        if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+            String telefonesDosAlunos = "";
+
+            for (Usuario aluno : alunosParaNotificar) {
+                if (!telefonesDosAlunos.isEmpty()) {
+                    telefonesDosAlunos += ", ";
+                }
+                telefonesDosAlunos += aluno.getTelefone();
+            }
+
+            telefoneParaMostrar = telefonesDosAlunos;
+        } else {
+            telefoneParaMostrar = agendamento.getAluno().getTelefone();
+        }
+
+        EmailProfessorNotification emailProfessor = new EmailProfessorNotification(
+                agendamento.getId(),
+                nomesDosAlunos,
+                telefoneParaMostrar,
+                agendamento.getCondominio().getNome(),
+                agendamento.getObservacao(),
+                agendamento.getData(),
+                agendamento.getHoraInicio(),
+                agendamento.getStatus(),
+                agendamento.getProfessor().getEmail()
+        );
+
+        client.notificarProfessor(emailProfessor);
+        log.info("Notificação de professor publicada na fila - agendamentoId={}, professor={}",
+                agendamento.getId(), agendamento.getProfessor().getEmail());
     }
 
     private Double calcularCustoSaldo(LocalTime horaInicio, LocalTime horaFim) {
@@ -264,15 +303,144 @@ public class AgendamentoService {
         return minutos / 60.0;
     }
 
+    private void validarConflitoProfessor(Long professorId, Long condominioId, LocalDate data, LocalTime horaInicio, LocalTime horaFim, Long agendamentoIdExcluir) {
+
+        List<Agendamento> agendamentosDoDia = agendamentoRepository
+                .findByProfessorIdAndDataAndStatusNot(professorId, data, "cancelado");
+
+        List<Agendamento> sobreposicao = agendamentosDoDia.stream()
+                .filter(existente -> agendamentoIdExcluir == null || !existente.getId().equals(agendamentoIdExcluir))
+                .filter(existente -> existente.getCondominio().getId().equals(condominioId))
+                .filter(existente -> horaInicio.isBefore(existente.getHoraFim()))
+                .filter(existente -> horaFim.isAfter(existente.getHoraInicio()))
+                .toList();
+
+        if (!sobreposicao.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Professor já possui um agendamento nesse horário");
+        }
+
+        List<Agendamento> conflitoIntervalo = agendamentosDoDia.stream()
+                .filter(existente -> agendamentoIdExcluir == null || !existente.getId().equals(agendamentoIdExcluir))
+                .filter(existente -> !existente.getCondominio().getId().equals(condominioId))
+                .filter(existente -> horaInicio.isBefore(existente.getHoraFim().plusHours(1)))
+                .filter(existente -> horaFim.isAfter(existente.getHoraInicio().minusHours(1)))
+                .toList();
+
+        if (!conflitoIntervalo.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Professor precisa de no mínimo 1h de intervalo entre condominios diferentes");
+        }
+    }
+
     @Transactional
     public AgendamentoResponse criarAgendamento(AgendamentoRequest dto) {
         Agendamento agendamento = new Agendamento();
 
-        Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
         Double custo = calcularCustoSaldo(dto.getHoraInicio(), dto.getHoraFim());
 
+        validarConflitoProfessor(
+                dto.getProfessor(),
+                dto.getCondominio(),
+                dto.getData(),
+                dto.getHoraInicio(),
+                dto.getHoraFim(),
+                null
+        );
+
+        if (dto.getTipo() == TipoAgendamento.GRUPO) {
+            if (dto.getAlunos() == null || dto.getAlunos().isEmpty()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Agendamento em grupo requer ao menos um aluno"
+                );
+            }
+
+            if (dto.getAluno() == null) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Agendamento em grupo requer um dono"
+                );
+            }
+
+            if (!dto.getAlunos().contains(dto.getAluno())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "O dono do grupo deve estar entre os alunos do grupo"
+                );
+            }
+
+            List<Saldo> saldos = new ArrayList<>();
+
+            for (Long alunoId : dto.getAlunos()) {
+                Saldo saldo = buscarSaldo(alunoId, dto.getServico());
+
+                if (saldo.getQuantidade() < custo) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Saldo insuficiente para o aluno id " + alunoId
+                    );
+                }
+
+                saldos.add(saldo);
+            }
+
+            agendamento.setAluno(
+                    buscarUsuario(dto.getAluno(), "Aluno")
+            );
+
+            agendamento.setProfessor(
+                    buscarUsuario(dto.getProfessor(), "Professor")
+            );
+
+            agendamento.setAuxiliar(
+                    buscarAuxiliar(dto.getAuxiliar())
+            );
+
+            agendamento.setRebatedor(
+                    buscarRebatedor(dto.getRebatedor())
+            );
+
+            agendamento.setServico(
+                    buscarServico(dto.getServico())
+            );
+
+            agendamento.setCondominio(
+                    buscarCondominio(dto.getCondominio())
+            );
+
+            agendamento.setData(dto.getData());
+            agendamento.setHoraInicio(dto.getHoraInicio());
+            agendamento.setHoraFim(dto.getHoraFim());
+            agendamento.setObservacao(dto.getObservacao());
+            agendamento.setTipo(TipoAgendamento.GRUPO);
+
+            agendamento.setAlunos(
+                    dto.getAlunos()
+                            .stream()
+                            .map(id -> buscarUsuario(id, "Aluno"))
+                            .toList()
+            );
+
+            for (Saldo saldo : saldos) {
+                deduzirSaldo(saldo, custo);
+            }
+
+            agendamento = agendamentoRepository.save(agendamento);
+
+            log.info("Agendamento criado - id={}, tipo={}, professor={}",
+                    agendamento.getId(), agendamento.getTipo(), dto.getProfessor());
+
+            notificar(agendamento);
+
+            return AgendamentoMapper.toResponse(agendamento, null);
+        }
+
+        Saldo saldo = buscarSaldo(dto.getAluno(), dto.getServico());
+
         if (saldo.getQuantidade() < custo) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Saldo insuficiente"
+            );
         }
 
         preencherAgendamento(
@@ -287,15 +455,18 @@ public class AgendamentoService {
         );
 
         agendamento.setHoraFim(dto.getHoraFim());
+        agendamento.setTipo(TipoAgendamento.INDIVIDUAL);
 
-        saldo.setQuantidade(saldo.getQuantidade() - custo);
+        deduzirSaldo(saldo, custo);
 
-        saldoRepository.save(saldo);
         agendamento = agendamentoRepository.save(agendamento);
+
+        log.info("Agendamento criado - id={}, tipo={}, professor={}",
+                agendamento.getId(), agendamento.getTipo(), dto.getProfessor());
 
         notificar(agendamento);
 
-        return toAgendamentoResponse(agendamento, saldo);
+        return AgendamentoMapper.toResponse(agendamento, saldo);
     }
 
     @Transactional
@@ -317,6 +488,17 @@ public class AgendamentoService {
         List<AgendamentoResponse> agendamentosCriados = new ArrayList<>();
 
         for (int i = 0; i < quantidadeRecorrencias; i++) {
+            LocalDate dataRecorrente = dto.getData().plusDays(i * 7L);
+
+            validarConflitoProfessor(
+                    dto.getProfessor(),
+                    dto.getCondominio(),
+                    dataRecorrente,
+                    dto.getHoraInicio(),
+                    dto.getHoraFim(),
+                    null
+            );
+
             Agendamento agendamento = new Agendamento();
 
             preencherAgendamento(
@@ -330,19 +512,19 @@ public class AgendamentoService {
                     dto
             );
 
-            agendamento.setData(dto.getData().plusDays(i * 7L));
+            agendamento.setData(dataRecorrente);
             agendamento.setHoraFim(dto.getHoraFim());
+            agendamento.setTipo(TipoAgendamento.INDIVIDUAL);
 
-            saldo.setQuantidade(saldo.getQuantidade() - custo);
+            deduzirSaldo(saldo, custo);
 
             agendamento = agendamentoRepository.save(agendamento);
 
             notificar(agendamento);
 
-            agendamentosCriados.add(toAgendamentoResponse(agendamento, saldo));
+            agendamentosCriados.add(AgendamentoMapper.toResponse(agendamento, saldo));
         }
 
-        saldoRepository.save(saldo);
 
         return agendamentosCriados;
     }
@@ -442,7 +624,6 @@ public class AgendamentoService {
         return toAgendamentoResponse(buscarAgendamento(id));
     }
 
-
     public AgendamentoResponse atualizarAgendamentoPorId(AgendamentoRequest dto, Long id) {
         Agendamento agendamento = buscarAgendamento(id);
 
@@ -463,14 +644,31 @@ public class AgendamentoService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente para o novo serviço");
             }
 
-            saldo.setQuantidade(saldo.getQuantidade() + custo);
-            saldoNovo.setQuantidade(saldoNovo.getQuantidade() - custo);
-
-            saldoRepository.save(saldo);
-            saldoRepository.save(saldoNovo);
+            estornarSaldo(saldo, custo);
+            deduzirSaldo(saldoNovo, custo);
 
             saldo = saldoNovo;
+        } else {
+            Double custoAntigo = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
+            Double custoNovo = calcularCustoSaldo(dto.getHoraInicio(), dto.getHoraFim());
+
+            if (!custoAntigo.equals(custoNovo)) {
+                Double saldoAposAjuste = saldo.getQuantidade() + custoAntigo - custoNovo;
+                if (saldoAposAjuste < 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente para o novo horário");
+                }
+                estornarSaldo(saldo, custoAntigo);
+                deduzirSaldo(saldo, custoNovo);
+            }
         }
+        validarConflitoProfessor(
+                dto.getProfessor(),
+                dto.getCondominio(),
+                dto.getData(),
+                dto.getHoraInicio(),
+                dto.getHoraFim(),
+                agendamento.getId()
+        );
 
         agendamento.setAluno(buscarUsuario(dto.getAluno(), "Aluno"));
         agendamento.setProfessor(buscarUsuario(dto.getProfessor(), "Professor"));
@@ -480,13 +678,15 @@ public class AgendamentoService {
         agendamento.setServico(servicoNovo);
         agendamento.setData(dto.getData());
         agendamento.setHoraInicio(dto.getHoraInicio());
+        agendamento.setHoraFim(dto.getHoraFim());
         agendamento.setObservacao(dto.getObservacao());
 
         agendamento = agendamentoRepository.save(agendamento);
 
-        return toAgendamentoResponse(agendamento, saldo);
+        return AgendamentoMapper.toResponse(agendamento, saldo);
     }
-    @Scheduled(fixedRate = 60000)
+
+    @Scheduled(fixedRate = 600000)
     @Transactional
     public void confirmarAgendamentosAutomaticamente() {
         List<Agendamento> agendamentos = agendamentoRepository.findByStatusIn(List.of("pendente"));
@@ -501,11 +701,14 @@ public class AgendamentoService {
 
             LocalDateTime limiteConfirmacao = dataHoraAgendamento.minusHours(24);
 
-            if (!agora.isBefore(limiteConfirmacao)) {
+            if (!agora.isBefore(limiteConfirmacao) && agora.isBefore(dataHoraAgendamento)) {
                 agendamento.setStatus("confirmado");
                 agendamento.setAtualizadoEm(agora);
 
                 agendamentoRepository.save(agendamento);
+
+                log.info("Agendamento confirmado automaticamente - id={}",
+                        agendamento.getId());
 
                 notificar(agendamento);
             }
@@ -514,11 +717,6 @@ public class AgendamentoService {
 
     public AgendamentoResponse atualizarStatusAgendamentoPorId(Long id, AgendamentoStatusRequest dto) {
         Agendamento agendamento = buscarAgendamento(id);
-
-        Saldo saldo = buscarSaldo(
-                agendamento.getAluno().getId(),
-                agendamento.getServico().getId()
-        );
 
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status não pode ser vazio");
@@ -547,8 +745,16 @@ public class AgendamentoService {
             }
 
             Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
-            saldo.setQuantidade(saldo.getQuantidade() + custoEstorno);
-            saldoRepository.save(saldo);
+
+            if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+                for (Usuario aluno : agendamento.getAlunos()) {
+                    Saldo saldoAluno = buscarSaldo(aluno.getId(), agendamento.getServico().getId());
+                    estornarSaldo(saldoAluno, custoEstorno);
+                }
+            } else {
+                Saldo saldo = buscarSaldo(agendamento.getAluno().getId(), agendamento.getServico().getId());
+                estornarSaldo(saldo, custoEstorno);
+            }
 
             agendamento.setObservacao(dto.getObservacao().trim());
         }
@@ -557,6 +763,9 @@ public class AgendamentoService {
         agendamento.setAtualizadoEm(LocalDateTime.now());
 
         agendamento = agendamentoRepository.save(agendamento);
+
+        log.info("Status do agendamento alterado - id={}, statusAnterior={}, statusNovo={}",
+                id, statusAtual, statusNovo);
 
         notificar(agendamento);
 
@@ -584,15 +793,26 @@ public class AgendamentoService {
     public void deletarAgendamentoPorId(Long id) {
         Agendamento agendamento = buscarAgendamento(id);
 
-        Saldo saldo = buscarSaldo(
-                agendamento.getAluno().getId(),
-                agendamento.getServico().getId()
-        );
+        if (agendamento.getStatus().equals("confirmado") || agendamento.getStatus().equals("finalizado")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Agendamento confirmado ou finalizado não pode ser deletado");
+        }
 
-        Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
-        saldo.setQuantidade(saldo.getQuantidade() + custoEstorno);
-        saldoRepository.save(saldo);
+        if (agendamento.getStatus().equals("pendente")) {
+            Double custoEstorno = calcularCustoSaldo(agendamento.getHoraInicio(), agendamento.getHoraFim());
+
+            if (agendamento.getTipo() == TipoAgendamento.GRUPO) {
+                for (Usuario aluno : agendamento.getAlunos()) {
+                    Saldo saldoAluno = buscarSaldo(aluno.getId(), agendamento.getServico().getId());
+                    estornarSaldo(saldoAluno, custoEstorno);
+                }
+            } else {
+                Saldo saldo = buscarSaldo(agendamento.getAluno().getId(), agendamento.getServico().getId());
+                estornarSaldo(saldo, custoEstorno);
+            }
+        }
 
         agendamentoRepository.deleteById(id);
+        log.info("Agendamento deletado - id={}",
+                id);
     }
 }

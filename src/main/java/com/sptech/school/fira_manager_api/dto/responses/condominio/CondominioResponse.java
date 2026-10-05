@@ -1,7 +1,9 @@
 package com.sptech.school.fira_manager_api.dto.responses.condominio;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "CondominioResponse", description = "Dados de resposta de um Condomínio.")
 public class CondominioResponse {
 
@@ -18,33 +20,29 @@ public class CondominioResponse {
     private String bairro;
 
     @Schema(description = "Rua do Condomínio", example = "Rua Santo Antônio")
-    private String rua;
+    private String logradouro;
 
     @Schema(description = "Número do Condomínio", example = "571")
     private String numero;
 
-    @Schema(description = "CEP do Condomínio", example = "08000-000")
+    @Schema(description = "Código de Endereçamento Postal", example = "09520650")
     private String cep;
 
-    public CondominioResponse(Long id, String nome, String cidade, String bairro, String rua, String numero) {
-        this(id, nome, cidade, bairro, rua, numero, null);
-    }
-
-    public CondominioResponse(Long id, String nome, String cidade, String bairro, String rua, String numero, String cep) {
+    public CondominioResponse(Long id, String nome, String cidade, String bairro, String logradouro, String numero, String cep) {
         this.id = id;
         this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
-        this.rua = rua;
+        this.logradouro = logradouro;
         this.numero = numero;
         this.cep = cep;
     }
 
-    public CondominioResponse(String nome, String cidade, String bairro, String rua, String numero) {
+    public CondominioResponse(String nome, String cidade, String bairro, String logradouro, String numero) {
         this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
-        this.rua = rua;
+        this.logradouro = logradouro;
         this.numero = numero;
     }
 
@@ -80,12 +78,12 @@ public class CondominioResponse {
         this.bairro = bairro;
     }
 
-    public String getRua() {
-        return rua;
+    public String getLogradouro() {
+        return logradouro;
     }
 
-    public void setRua(String rua) {
-        this.rua = rua;
+    public void setLogradouro(String logradouro) {
+        this.logradouro = logradouro;
     }
 
     public String getNumero() {

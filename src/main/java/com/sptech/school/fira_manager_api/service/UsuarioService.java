@@ -1,6 +1,13 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.sptech.school.fira_manager_api.mapper.usuario.UsuarioMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Locale;
 import java.util.ArrayList;
 
@@ -15,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +30,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
 import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.UsuarioDetalhesDto;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.LoginRequest;
@@ -47,6 +57,10 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final AuthenticationManager authenticationManager;
+    private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
+    private static final int MAX_TENTATIVAS = 5;
+    private static final int MINUTOS_BLOQUEADOS = 15;
+    private final Map<String, ControleLoginService> controleLogins = new ConcurrentHashMap<>();
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           TipoUsuarioRepository tipoUsuarioRepository,
@@ -60,28 +74,6 @@ public class UsuarioService {
         this.passwordEncoder = passwordEncoder;
         this.gerenciadorTokenJwt = gerenciadorTokenJwt;
         this.authenticationManager = authenticationManager;
-    }
-
-    private UsuarioResponse toResponse(Usuario usuario) {
-        TipoUsuarioResponse tipoResponse = usuario.getTipoUsuario() != null
-                ? new TipoUsuarioResponse(usuario.getTipoUsuario().getId(), usuario.getTipoUsuario().getCargo())
-                : null;
-
-        CondominioResponse condominioResponse = null;
-        if (usuario.getCondominio() != null) {
-            Condominio c = usuario.getCondominio();
-            condominioResponse = new CondominioResponse(c.getId(), c.getNome(), c.getCidade(), c.getBairro(), c.getRua(), c.getNumero());
-        }
-
-        return new UsuarioResponse(
-                usuario.getId(),
-                tipoResponse,
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getTelefone(),
-                condominioResponse,
-                usuario.getCriadoEm()
-        );
     }
 
     public UsuarioResponse criarUsuario(UsuarioRequest dto) {
@@ -118,45 +110,67 @@ public class UsuarioService {
             Condominio condominio = condominioRepository.findById(dto.getCondominio())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Condomínio não encontrado"));
 
-            Usuario usuarioAluno = new Usuario();
-            usuarioAluno.setTipoUsuario(tipoUsuario);
-            usuarioAluno.setNome(dto.getNome());
-            usuarioAluno.setEmail(dto.getEmail());
-            usuarioAluno.setTelefone(dto.getTelefone());
-            usuarioAluno.setSenha(senhaCriptografada);
-            usuarioAluno.setCondominio(condominio);
-
-            return toResponse(usuarioRepository.save(usuarioAluno));
+            Usuario usuarioAluno = UsuarioMapper.toEntity(dto, tipoUsuario, senhaCriptografada, condominio);
+            return UsuarioMapper.toResponse(usuarioRepository.save(usuarioAluno));
         }
 
-        Usuario usuarioNovo = new Usuario(tipoUsuario, dto.getNome(), dto.getEmail(), dto.getTelefone(), senhaCriptografada);
-        return toResponse(usuarioRepository.save(usuarioNovo));
+        Usuario usuarioNovo = UsuarioMapper.toEntity(dto, tipoUsuario, senhaCriptografada, null);
+
+        Usuario usuarioSalvo = usuarioRepository.save(usuarioNovo);
+
+        log.info("Usuário criado - id={}, tipoUsuario={}",
+                usuarioSalvo.getId(), tipoUsuario.getCargo());
+
+        return UsuarioMapper.toResponse(usuarioSalvo);
     }
 
     public UsuarioTokenResponse logarUsuario(LoginRequest dto) {
-        Authentication autenticacao = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha())
-        );
 
-        SecurityContextHolder.getContext().setAuthentication(autenticacao);
+        ControleLoginService controle = controleLogins.computeIfAbsent(dto.getEmail(), email -> new ControleLoginService());
 
-        Object principal = autenticacao.getPrincipal();
-        UsuarioDetalhesDto usuarioDetalhes;
-
-        if (principal instanceof UsuarioDetalhesDto) {
-            usuarioDetalhes = (UsuarioDetalhesDto) principal;
-        } else {
-            String email = principal.toString();
-            Usuario usuarioEntity = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado após autenticação"));
-            usuarioDetalhes = new UsuarioDetalhesDto(usuarioEntity);
+        if (controle.estaBloqueado()) {
+            throw new ResponseStatusException(HttpStatus.LOCKED, "Conta bloqueada. Tente novamente mais tarde.");
         }
 
-        String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
+        try {
+            Authentication autenticacao = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha())
+            );
 
-        Usuario usuario = usuarioDetalhes.getUsuario();
-        String cargo = usuario.getTipoUsuario() != null ? usuario.getTipoUsuario().getCargo() : null;
-        return new UsuarioTokenResponse(usuario.getId(), usuario.getNome(), usuario.getEmail(), cargo, token);
+            SecurityContextHolder.getContext().setAuthentication(autenticacao);
+
+            controle.resetar();
+
+            Object principal = autenticacao.getPrincipal();
+            UsuarioDetalhesDto usuarioDetalhes;
+
+            if (principal instanceof UsuarioDetalhesDto) {
+                usuarioDetalhes = (UsuarioDetalhesDto) principal;
+            } else {
+                String email = principal.toString();
+                Usuario usuarioEntity = usuarioRepository.findByEmail(email)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado após autenticação"));
+                usuarioDetalhes = new UsuarioDetalhesDto(usuarioEntity);
+            }
+
+            String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
+
+            Usuario usuario = usuarioDetalhes.getUsuario();
+
+            log.info("Login realizado - email={}", dto.getEmail());
+
+            return UsuarioMapper.toTokenResponse(usuario, token);
+
+        } catch (BadCredentialsException e) {
+
+            controle.incrementar();
+
+            if (controle.getTentativas() >= MAX_TENTATIVAS) {
+                controle.bloquear(LocalDateTime.now().plusMinutes(MINUTOS_BLOQUEADOS));
+            }
+
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+        }
     }
 
     public PaginaResponse<UsuarioResponse> buscarUsuarios(
@@ -224,7 +238,7 @@ public class UsuarioService {
     public UsuarioResponse buscarUsuarioPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
-        return toResponse(usuario);
+        return UsuarioMapper.toResponse(usuario);
     }
 
     private Pageable comOrdenacaoEstavel(Pageable pageable) {
@@ -263,13 +277,17 @@ public class UsuarioService {
         usuarioNovo.setTelefone(dto.getTelefone());
         usuarioNovo.setSenha(passwordEncoder.encode(dto.getSenha()));
 
-        return toResponse(usuarioRepository.save(usuarioNovo));
+        return UsuarioMapper.toResponse(usuarioRepository.save(usuarioNovo));
     }
 
     public void deletarUsuarioPorId(Long id) {
         if (!usuarioRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe");
         }
+
         usuarioRepository.deleteById(id);
+
+        log.info("Usuário deletado - id={}",
+                id);
     }
 }

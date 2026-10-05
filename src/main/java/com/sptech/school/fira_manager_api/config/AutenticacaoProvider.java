@@ -9,10 +9,13 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class AutenticacaoProvider implements AuthenticationProvider {
 
+    private static final Logger log = LoggerFactory.getLogger(AutenticacaoProvider.class);
     private final AutenticacaoService autenticacaoService;
     private final PasswordEncoder passwordEncoder;
 
@@ -29,9 +32,11 @@ public class AutenticacaoProvider implements AuthenticationProvider {
         UserDetails userDetails = autenticacaoService.loadUserByUsername(username);
 
         if (!passwordEncoder.matches(senha, userDetails.getPassword())) {
+            log.warn("Tentativa de login falhou para o usuário: {}", username);
             throw new BadCredentialsException("Credenciais inválidas");
         }
 
+        log.info("Login bem-sucedido para o usuário: {}", username);
         return new UsernamePasswordAuthenticationToken(username, null, userDetails.getAuthorities());
     }
 
