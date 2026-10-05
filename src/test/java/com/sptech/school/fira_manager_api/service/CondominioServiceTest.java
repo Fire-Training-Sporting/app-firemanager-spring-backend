@@ -1,14 +1,20 @@
 package com.sptech.school.fira_manager_api.service;
 
 import com.sptech.school.fira_manager_api.dto.requests.condominio.CondominioRequest;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -79,6 +85,30 @@ class CondominioServiceTest {
         assertEquals(2, response.size());
 
         verify(condominioRepository).findAll();
+    }
+
+    @Test
+    void deveObterCondominiosPaginados() {
+        Condominio condominio = new Condominio();
+        condominio.setId(1L);
+        condominio.setNome("Condomínio A");
+        Pageable pageable = PageRequest.of(1, 10);
+
+        when(condominioRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(condominio), pageable, 11));
+
+        PaginaResponse<CondominioResponse> response =
+                condominioService.obterCondominios(pageable, null, null);
+
+        assertEquals(1, response.content().size());
+        assertEquals(1, response.page());
+        assertEquals(10, response.size());
+        assertEquals(11, response.totalElements());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(condominioRepository).findAll(any(Specification.class), pageableCaptor.capture());
+        assertEquals(1, pageableCaptor.getValue().getPageNumber());
+        assertEquals(10, pageableCaptor.getValue().getPageSize());
+        assertNotNull(pageableCaptor.getValue().getSort().getOrderFor("id"));
     }
 
     @Test
