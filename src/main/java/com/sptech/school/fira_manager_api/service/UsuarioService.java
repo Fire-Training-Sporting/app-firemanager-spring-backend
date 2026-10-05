@@ -228,7 +228,7 @@ public class UsuarioService {
         };
 
         Page<Usuario> usuarios = usuarioRepository.findAll(specification, pageableEstavel);
-        return PaginaResponse.from(usuarios.map(this::toResponse));
+        return PaginaResponse.from(usuarios.map(UsuarioMapper::toResponse));
     }
 
     public PaginaResponse<UsuarioResponse> buscarUsuarios(Pageable pageable, String nome, List<Long> tipoUsuarioIds) {
