@@ -75,6 +75,7 @@ public class SegurancaConfig {
                         .requestMatchers("/api/saldos/**").hasAnyRole("ADMINISTRACAO", "ROOT")
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(autenticacaoEntryPoint))

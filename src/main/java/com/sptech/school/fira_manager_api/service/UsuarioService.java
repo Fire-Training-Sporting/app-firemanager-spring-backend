@@ -87,12 +87,10 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente administradores podem criar usuários");
         }
 
-        if (usuarioRepository.existsByNome(dto.getNome())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Alguém com este nome já cadastrado");
-        }
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email já cadastrado");
         }
+
         if (usuarioRepository.existsByTelefone(dto.getTelefone())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Telefone já cadastrado");
         }
