@@ -1,11 +1,28 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.sptech.school.fira_manager_api.mapper.usuario.UsuarioMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Locale;
+import java.util.ArrayList;
+
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +36,11 @@ import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.UsuarioDetalhesDto;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.LoginRequest;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.UsuarioRequest;
+import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.tipoUsuario.TipoUsuarioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
@@ -35,6 +57,10 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final AuthenticationManager authenticationManager;
+    private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
+    private static final int MAX_TENTATIVAS = 5;
+    private static final int MINUTOS_BLOQUEADOS = 15;
+    private final Map<String, ControleLoginService> controleLogins = new ConcurrentHashMap<>();
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           TipoUsuarioRepository tipoUsuarioRepository,
@@ -61,12 +87,10 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente administradores podem criar usuários");
         }
 
-        if (usuarioRepository.existsByNome(dto.getNome())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Alguém com este nome já cadastrado");
-        }
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email já cadastrado");
         }
+
         if (usuarioRepository.existsByTelefone(dto.getTelefone())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Telefone já cadastrado");
         }
@@ -89,39 +113,132 @@ public class UsuarioService {
         }
 
         Usuario usuarioNovo = UsuarioMapper.toEntity(dto, tipoUsuario, senhaCriptografada, null);
-        return UsuarioMapper.toResponse(usuarioRepository.save(usuarioNovo));
+
+        Usuario usuarioSalvo = usuarioRepository.save(usuarioNovo);
+
+        log.info("Usuário criado - id={}, tipoUsuario={}",
+                usuarioSalvo.getId(), tipoUsuario.getCargo());
+
+        return UsuarioMapper.toResponse(usuarioSalvo);
     }
 
     public UsuarioTokenResponse logarUsuario(LoginRequest dto) {
-        Authentication autenticacao = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha())
-        );
 
-        SecurityContextHolder.getContext().setAuthentication(autenticacao);
+        ControleLoginService controle = controleLogins.computeIfAbsent(dto.getEmail(), email -> new ControleLoginService());
 
-        Object principal = autenticacao.getPrincipal();
-        UsuarioDetalhesDto usuarioDetalhes;
-
-        if (principal instanceof UsuarioDetalhesDto) {
-            usuarioDetalhes = (UsuarioDetalhesDto) principal;
-        } else {
-            String email = principal.toString();
-            Usuario usuarioEntity = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado após autenticação"));
-            usuarioDetalhes = new UsuarioDetalhesDto(usuarioEntity);
+        if (controle.estaBloqueado()) {
+            throw new ResponseStatusException(HttpStatus.LOCKED, "Conta bloqueada. Tente novamente mais tarde.");
         }
 
-        String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
+        try {
+            Authentication autenticacao = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha())
+            );
 
-        Usuario usuario = usuarioDetalhes.getUsuario();
-        return UsuarioMapper.toTokenResponse(usuario, token);
+            SecurityContextHolder.getContext().setAuthentication(autenticacao);
+
+            controle.resetar();
+
+            Object principal = autenticacao.getPrincipal();
+            UsuarioDetalhesDto usuarioDetalhes;
+
+            if (principal instanceof UsuarioDetalhesDto) {
+                usuarioDetalhes = (UsuarioDetalhesDto) principal;
+            } else {
+                String email = principal.toString();
+                Usuario usuarioEntity = usuarioRepository.findByEmail(email)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado após autenticação"));
+                usuarioDetalhes = new UsuarioDetalhesDto(usuarioEntity);
+            }
+
+            String token = gerenciadorTokenJwt.generateToken(usuarioDetalhes);
+
+            Usuario usuario = usuarioDetalhes.getUsuario();
+
+            log.info("Login realizado - email={}", dto.getEmail());
+
+            return UsuarioMapper.toTokenResponse(usuario, token);
+
+        } catch (BadCredentialsException e) {
+
+            controle.incrementar();
+
+            if (controle.getTentativas() >= MAX_TENTATIVAS) {
+                controle.bloquear(LocalDateTime.now().plusMinutes(MINUTOS_BLOQUEADOS));
+            }
+
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+        }
     }
 
-    public List<UsuarioResponse> buscarUsuarios() {
-        return usuarioRepository.findAll()
-                .stream()
-                .map(UsuarioMapper::toResponse)
-                .toList();
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(
+            Pageable pageable,
+            String nome,
+            List<Long> tipoUsuarioIds,
+            List<String> tipoUsuarioCargos,
+            String campo,
+            String busca) {
+        Pageable pageableEstavel = comOrdenacaoEstavel(pageable);
+        String valorBusca = busca == null || busca.isBlank() ? nome : busca;
+        String campoBusca = campo == null || campo.isBlank() ? "nome" : campo;
+        String termo = valorBusca == null ? null : valorBusca.trim().toLowerCase(Locale.ROOT);
+
+        if (termo != null && !termo.isBlank()
+                && !List.of("id", "nome", "email", "telefone", "endereco", "tipoUsuario.cargo")
+                        .contains(campoBusca)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
+        }
+
+        Specification<Usuario> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (tipoUsuarioIds != null && !tipoUsuarioIds.isEmpty()) {
+                predicates.add(root.join("tipoUsuario").get("id").in(tipoUsuarioIds));
+            }
+
+            if (tipoUsuarioCargos != null && !tipoUsuarioCargos.isEmpty()) {
+                List<String> cargosNormalizados = tipoUsuarioCargos.stream()
+                        .filter(cargo -> cargo != null && !cargo.isBlank())
+                        .map(cargo -> cargo.trim().toLowerCase(Locale.ROOT))
+                        .toList();
+                if (!cargosNormalizados.isEmpty()) {
+                    predicates.add(criteriaBuilder.lower(root.join("tipoUsuario").get("cargo"))
+                            .in(cargosNormalizados));
+                }
+            }
+
+            Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+            boolean professor = autenticacao != null && autenticacao.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_PROFESSOR"));
+            if (professor) {
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.join("tipoUsuario").get("cargo")), "aluno"));
+            }
+
+            if (termo != null && !termo.isBlank()) {
+                String padrao = "%" + termo + "%";
+                switch (campoBusca) {
+                    case "id" -> predicates.add(criteriaBuilder.like(
+                            root.get("id").as(String.class), padrao));
+                    case "nome", "email", "telefone" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get(campoBusca)), padrao));
+                    case "endereco" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("condominio", JoinType.LEFT).get("nome")), padrao));
+                    case "tipoUsuario.cargo" -> predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.join("tipoUsuario").get("cargo")), padrao));
+                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo de busca inválido");
+                }
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Usuario> usuarios = usuarioRepository.findAll(specification, pageableEstavel);
+        return PaginaResponse.from(usuarios.map(UsuarioMapper::toResponse));
+    }
+
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(Pageable pageable, String nome, List<Long> tipoUsuarioIds) {
+        return buscarUsuarios(pageable, nome, tipoUsuarioIds, null, null, null);
     }
 
     public UsuarioResponse buscarUsuarioPorId(Long id) {
@@ -130,16 +247,31 @@ public class UsuarioService {
         return UsuarioMapper.toResponse(usuario);
     }
 
-    public List<UsuarioResponse> buscarUsuarioPorNome(String nome) {
-        return usuarioRepository.findByNomeContainingIgnoreCase(nome)
-                .stream()
-                .map(UsuarioMapper::toResponse)
+    private Pageable comOrdenacaoEstavel(Pageable pageable) {
+        List<Sort.Order> outrasOrdenacoes = pageable.getSort().stream()
+                .filter(order -> !order.getProperty().equals("id"))
                 .toList();
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        if (!outrasOrdenacoes.isEmpty()) {
+            sort = sort.and(Sort.by(outrasOrdenacoes));
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
     public UsuarioResponse atualizarUsuarioPorId(Long id, UsuarioRequest dto) {
         Usuario usuarioNovo = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
+
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        boolean alunoAtualizandoPerfil = autenticacao != null && autenticacao.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ALUNO"));
+        if (alunoAtualizandoPerfil
+                && (!dto.getTipoUsuario().equals(usuarioNovo.getTipoUsuario().getId())
+                    || !java.util.Objects.equals(dto.getCondominio(),
+                            usuarioNovo.getCondominio() == null ? null : usuarioNovo.getCondominio().getId()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Alunos não podem alterar o próprio tipo de usuário ou condomínio");
+        }
 
         TipoUsuario tipoUsuario = tipoUsuarioRepository.findById(dto.getTipoUsuario())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tipo de usuário não encontrado"));
@@ -166,9 +298,25 @@ public class UsuarioService {
     }
 
     public void deletarUsuarioPorId(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe");
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
+
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        if (administracaoNaoPodeRemoverCargo(autenticacao, usuario.getTipoUsuario())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Somente root pode remover usuários root ou de administração");
         }
-        usuarioRepository.deleteById(id);
+
+        usuarioRepository.delete(usuario);
+
+        log.info("Usuário deletado - id={}",
+                id);
+    }
+
+    private boolean administracaoNaoPodeRemoverCargo(Authentication autenticacao, TipoUsuario tipoUsuario) {
+        boolean administracao = autenticacao != null && autenticacao.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMINISTRACAO"));
+        String cargo = tipoUsuario.getCargo();
+        return administracao && (cargo.equalsIgnoreCase("root") || cargo.equalsIgnoreCase("administracao"));
     }
 }
