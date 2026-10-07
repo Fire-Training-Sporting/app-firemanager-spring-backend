@@ -84,7 +84,6 @@ class UsuarioServiceTest {
             request.setTelefone("11935234123");
             request.setSenha("teste123*");
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
@@ -117,7 +116,6 @@ class UsuarioServiceTest {
             request.setTelefone("11935234123");
             request.setSenha("teste123*");
 
-            when(usuarioRepository.existsByNome("Novo root")).thenReturn(false);
             when(usuarioRepository.existsByEmail("root@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
@@ -151,7 +149,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(1L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
@@ -181,26 +178,6 @@ class UsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("Cadastro Falho - Nome Cadastrado")
-        void cadastrarUsuarioNomeRepetido() {
-            mockAutenticacaoAdmin();
-            UsuarioRequest request = new UsuarioRequest();
-            request.setTipoUsuario(4L);
-            request.setNome("Marcos Vinicius");
-            request.setEmail("marcos@gmail.com");
-            request.setTelefone("11935234123");
-            request.setSenha("teste123*");
-            request.setCondominio(1L);
-
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(true);
-
-            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                    () -> usuarioService.criarUsuario(request)
-            );
-            assertEquals(409, exception.getStatusCode().value());
-        }
-
-        @Test
         @DisplayName("Cadastro Falho - Email Cadastrado")
         void cadastrarUsuarioEmailRepetido() {
             mockAutenticacaoAdmin();
@@ -212,7 +189,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(1L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(true);
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
@@ -233,7 +209,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(1L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(true);
 
@@ -254,7 +229,6 @@ class UsuarioServiceTest {
             request.setTelefone("11935234123");
             request.setSenha("teste123*");
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
             when(tipoUsuarioRepository.findById(99L)).thenReturn(Optional.empty());
@@ -277,7 +251,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(100L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
@@ -307,7 +280,6 @@ class UsuarioServiceTest {
             request.setTelefone("11935234123");
             request.setSenha("teste123*");
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
