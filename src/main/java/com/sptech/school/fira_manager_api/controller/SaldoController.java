@@ -1,8 +1,8 @@
 package com.sptech.school.fira_manager_api.controller;
 
-import com.sptech.school.fira_manager_api.dto.SaldoDTO;
-import com.sptech.school.fira_manager_api.dto.responses.ProfessorSaldoResponse;
-import com.sptech.school.fira_manager_api.dto.responses.SaldoResponse;
+import com.sptech.school.fira_manager_api.dto.requests.saldo.SaldoRequest;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.ProfessorSaldoResponse;
+import com.sptech.school.fira_manager_api.dto.responses.saldo.SaldoResponse;
 import com.sptech.school.fira_manager_api.service.SaldoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,7 +48,7 @@ public class SaldoController {
             )
     })
     @PostMapping
-    public ResponseEntity<SaldoResponse> criarSaldo(@Valid @RequestBody SaldoDTO dto) {
+    public ResponseEntity<SaldoResponse> criarSaldo(@Valid @RequestBody SaldoRequest dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(saldoService.criarSaldo(dto));
     }
 
@@ -111,7 +112,7 @@ public class SaldoController {
             )
     })
     @PutMapping("/{id}")
-    public ResponseEntity<SaldoResponse> atualizarSaldoPorId(@PathVariable Long id, @Valid @RequestBody SaldoDTO dto) {
+    public ResponseEntity<SaldoResponse> atualizarSaldoPorId(@PathVariable Long id, @Valid @RequestBody SaldoRequest dto) {
         return ResponseEntity.status(HttpStatus.OK).body(saldoService.atualizarSaldoPorId(dto, id));
     }
 
@@ -153,6 +154,7 @@ public class SaldoController {
             )
     })
     @GetMapping("/professor/{id}")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMINISTRACAO') or (hasRole('PROFESSOR') and @segurancaAutorizacao.usuarioAtualEh(#p0))")
     public ResponseEntity<ProfessorSaldoResponse> buscarSaldoProfessorPorId(@PathVariable Long id) {
         return ResponseEntity.ok(saldoService.buscarSaldoProfessorPorId(id));
     }

@@ -17,7 +17,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("FireManager API")
                         .description("API do sistema FireManager")
-                        .version("2.4.6"))
+                        .version("2.5.0"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components().addSecuritySchemes("bearerAuth",
                         new SecurityScheme()

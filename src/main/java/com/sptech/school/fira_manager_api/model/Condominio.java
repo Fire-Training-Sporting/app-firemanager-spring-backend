@@ -21,28 +21,40 @@ public class Condominio {
     private String bairro;
 
     @Column(nullable = false)
-    private String rua;
+    private String logradouro;
 
     @Column(nullable = false)
     private String numero;
 
+    @Column (nullable = false)
+    private String cep;
+
     public Condominio() {
     }
 
-    public Condominio(Long id, String cidade, String bairro, String rua, String numero) {
+    public Condominio(Long id, String cidade, String bairro, String logradouro, String numero) {
         this.id = id;
         this.cidade = cidade;
         this.bairro = bairro;
-        this.rua = rua;
+        this.logradouro = logradouro;
         this.numero = numero;
     }
 
-    public Condominio(String nome, String cidade, String bairro, String rua, String numero) {
+    public Condominio(String nome, String cidade, String bairro, String logradouro, String numero) {
         this.nome = nome;
         this.cidade = cidade;
         this.bairro = bairro;
-        this.rua = rua;
+        this.logradouro = logradouro;
         this.numero = numero;
+    }
+
+    public Condominio(String nome, String cidade, String bairro, String logradouro, String numero, String cep) {
+        this.nome = nome;
+        this.cidade = cidade;
+        this.bairro = bairro;
+        this.logradouro = logradouro;
+        this.numero = numero;
+        this.cep = cep;
     }
 
     public Long getId() {
@@ -77,12 +89,12 @@ public class Condominio {
         this.bairro = bairro;
     }
 
-    public String getRua() {
-        return rua;
+    public String getLogradouro() {
+        return logradouro;
     }
 
-    public void setRua(String rua) {
-        this.rua = rua;
+    public void setLogradouro(String logradouro) {
+        this.logradouro = logradouro;
     }
 
     public String getNumero() {
@@ -91,5 +103,13 @@ public class Condominio {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 }

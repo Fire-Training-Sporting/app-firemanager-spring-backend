@@ -3,8 +3,8 @@ package com.sptech.school.fira_manager_api.dto.responses.usuario;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.sptech.school.fira_manager_api.dto.CondominioDTO;
-import com.sptech.school.fira_manager_api.model.TipoUsuario;
+import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.tipoUsuario.TipoUsuarioResponse;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -15,8 +15,8 @@ public class UsuarioResponse {
     @Schema(description = "ID do usuário", example = "1")
     private Long id;
 
-    @Schema(description = "Tipo do usuário", example = "{ \"id\": 4, \"cargo\": \"aluno\" }")
-    private TipoUsuario tipoUsuario;
+    @Schema(description = "Tipo do usuário")
+    private TipoUsuarioResponse tipoUsuario;
 
     @Schema(description = "Nome completo do usuário", example = "Marcos Vinicius Albano")
     private String nome;
@@ -28,17 +28,27 @@ public class UsuarioResponse {
     private String telefone;
 
     @Schema(description = "Condomínio em que o aluno recebe aulas. Null se não for aluno")
-    private CondominioDTO condominio;
+    private CondominioResponse condominio;
 
     @Schema(description = "Data de criação do usuário", example = "03/04/2026 11:43:49")
     private LocalDateTime criadoEm;
-
 
     public UsuarioResponse(Long id, String nome, String email, String telefone) {
         this.id = id;
         this.nome = nome;
         this.email = email;
         this.telefone = telefone;
+    }
+
+    public UsuarioResponse(Long id, TipoUsuarioResponse tipoUsuario, String nome, String email,
+                            String telefone, CondominioResponse condominio, LocalDateTime criadoEm) {
+        this.id = id;
+        this.tipoUsuario = tipoUsuario;
+        this.nome = nome;
+        this.email = email;
+        this.telefone = telefone;
+        this.condominio = condominio;
+        this.criadoEm = criadoEm;
     }
 
     public Long getId() {
@@ -49,11 +59,11 @@ public class UsuarioResponse {
         this.id = id;
     }
 
-    public TipoUsuario getTipoUsuario() {
+    public TipoUsuarioResponse getTipoUsuario() {
         return tipoUsuario;
     }
 
-    public void setTipoUsuario(TipoUsuario tipoUsuario) {
+    public void setTipoUsuario(TipoUsuarioResponse tipoUsuario) {
         this.tipoUsuario = tipoUsuario;
     }
 
@@ -81,11 +91,11 @@ public class UsuarioResponse {
         this.telefone = telefone;
     }
 
-    public CondominioDTO getCondominio() {
+    public CondominioResponse getCondominio() {
         return condominio;
     }
 
-    public void setCondominio(CondominioDTO condominio) {
+    public void setCondominio(CondominioResponse condominio) {
         this.condominio = condominio;
     }
 
