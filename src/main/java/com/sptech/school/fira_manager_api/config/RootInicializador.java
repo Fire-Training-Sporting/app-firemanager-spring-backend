@@ -12,10 +12,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/**
- * Cria o usuário root inicial SOMENTE quando tb_usuarios está completamente vazia.
- * Não usa UsuarioService.criarUsuario porque ele exige um admin logado no SecurityContext.
- */
 @Component
 public class RootInicializador implements ApplicationRunner {
 
