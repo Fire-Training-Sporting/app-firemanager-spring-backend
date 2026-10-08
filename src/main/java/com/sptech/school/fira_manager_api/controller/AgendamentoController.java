@@ -106,9 +106,11 @@ public class AgendamentoController {
                         @RequestParam(required = false) String status,
                                                 @RequestParam(required = false) String campo,
                                                 @RequestParam(required = false) String busca,
-                        @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+                                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+                                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+                        Pageable pageable) {
 
-        return ResponseEntity.ok(agendamentoService.buscarAgendamentosPaginados(pageable, status, campo, busca));
+        return ResponseEntity.ok(agendamentoService.buscarAgendamentosPaginados(pageable, status, campo, busca, dataInicio, dataFim));
     }
 
         @GetMapping("/historico-pagamentos")
@@ -117,7 +119,7 @@ public class AgendamentoController {
                         @RequestParam Long participanteId,
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
-                        @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+                        @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
                 return ResponseEntity.ok(agendamentoService.buscarHistoricoAulasPaginado(
                                 participanteId, dataInicio, dataFim, pageable));
         }

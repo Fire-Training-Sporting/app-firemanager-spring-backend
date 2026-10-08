@@ -156,15 +156,14 @@ public class AgendamentoService {
     }
 
     private void preencherAgendamento(
-        Agendamento agendamento,
-        Long alunoId,
-        Long professorId,
-        Long auxiliarId,
-        Long rebatedorId,
-        Long servicoId,
-        Long condominioId,
-        AgendamentoRequest dto)   
-    {
+            Agendamento agendamento,
+            Long alunoId,
+            Long professorId,
+            Long auxiliarId,
+            Long rebatedorId,
+            Long servicoId,
+            Long condominioId,
+            AgendamentoRequest dto) {
         agendamento.setAluno(buscarUsuario(alunoId, "Aluno"));
         agendamento.setProfessor(buscarUsuario(professorId, "Professor"));
         agendamento.setAuxiliar(buscarAuxiliar(auxiliarId));
@@ -490,8 +489,7 @@ public class AgendamentoService {
         return PaginaResponse.from(pagina);
     }
 
-    public PaginaResponse<AgendamentoResponse> buscarAgendamentosPaginados(
-            Pageable pageable, String status, String campo, String busca) {
+    public PaginaResponse<AgendamentoResponse> buscarAgendamentosPaginados(Pageable pageable, String status, String campo, String busca, LocalDate dataInicio, LocalDate dataFim) {
         String campoBusca = campo == null || campo.isBlank() ? "id" : campo;
         String termo = busca == null || busca.isBlank() ? null : busca.trim().toLowerCase(Locale.ROOT);
         List<String> camposPermitidos = List.of("aluno", "id", "data", "condominio", "professor", "status");
@@ -520,6 +518,14 @@ public class AgendamentoService {
             if (status != null && !status.isBlank()) {
                 predicates.add(criteriaBuilder.equal(
                         criteriaBuilder.lower(root.get("status")), status.trim().toLowerCase(Locale.ROOT)));
+            }
+
+            if (dataInicio != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("data"), dataInicio));
+            }
+
+            if (dataFim != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("data"), dataFim));
             }
 
             if (termo != null) {
@@ -749,13 +755,21 @@ public class AgendamentoService {
     }
 
     private Pageable comOrdenacaoEstavel(Pageable pageable) {
-        List<Sort.Order> outrasOrdenacoes = pageable.getSort().stream()
-                .filter(order -> !order.getProperty().equals("id"))
-                .toList();
-        Sort sort = Sort.by(Sort.Direction.ASC, "id");
-        if (!outrasOrdenacoes.isEmpty()) {
-            sort = sort.and(Sort.by(outrasOrdenacoes));
+        List<Sort.Order> orders = pageable.getSort().stream().toList();
+
+        // Se não houver ordenação definida, usa ID como fallback
+        if (orders.isEmpty()) {
+            return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "id"));
         }
+
+        // Verifica se já tem ordenação por ID, se não, adiciona como critério secundário para estabilidade
+        boolean temIdOrder = orders.stream().anyMatch(order -> order.getProperty().equals("id"));
+        Sort sort = Sort.by(orders);
+
+        if (!temIdOrder) {
+            sort = sort.and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
