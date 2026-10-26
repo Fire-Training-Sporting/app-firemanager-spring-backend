@@ -3,6 +3,7 @@ package com.sptech.school.fira_manager_api.config;
 import com.sptech.school.fira_manager_api.service.AutenticacaoService;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -34,6 +35,11 @@ public class AutenticacaoProvider implements AuthenticationProvider {
         if (!passwordEncoder.matches(senha, userDetails.getPassword())) {
             log.warn("Tentativa de login falhou para o usuário: {}", username);
             throw new BadCredentialsException("Credenciais inválidas");
+        }
+
+        if (!userDetails.isEnabled()) {
+            log.warn("Tentativa de login de usuário arquivado: {}", username);
+            throw new DisabledException("Usuário arquivado");
         }
 
         log.info("Login bem-sucedido para o usuário: {}", username);

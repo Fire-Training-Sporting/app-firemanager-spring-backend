@@ -36,7 +36,7 @@ public class UsuarioMapper {
                 ? CondominioMapper.toResponse(usuario.getCondominio())
                 : null;
 
-        return new UsuarioResponse(
+        UsuarioResponse response = new UsuarioResponse(
                 usuario.getId(),
                 tipoResponse,
                 usuario.getNome(),
@@ -45,6 +45,9 @@ public class UsuarioMapper {
                 condominioResponse,
                 usuario.getCriadoEm()
         );
+        response.setArquivado(usuario.isArquivado());
+        response.setArquivadoEm(usuario.getArquivadoEm());
+        return response;
     }
 
     public static UsuarioTokenResponse toTokenResponse(Usuario usuario, String token) {

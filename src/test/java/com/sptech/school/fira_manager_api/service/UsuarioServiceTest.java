@@ -10,7 +10,9 @@ import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResp
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
+import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
+import com.sptech.school.fira_manager_api.repository.SaldoRepository;
 import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,12 +38,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +59,8 @@ class UsuarioServiceTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private GerenciadorTokenJwt gerenciadorTokenJwt;
     @Mock private AuthenticationManager authenticationManager;
+    @Mock private AgendamentoRepository agendamentoRepository;
+    @Mock private SaldoRepository saldoRepository;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -773,35 +782,92 @@ class UsuarioServiceTest {
         }
     }
 
+    private void mockAutenticacao(String email, String role) {
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                email,
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority(role))
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    private Usuario criarUsuarioComCargo(Long id, String cargo) {
+        TipoUsuario tipo = new TipoUsuario();
+        tipo.setCargo(cargo);
+        Usuario usuario = new Usuario();
+        usuario.setId(id);
+        usuario.setNome("Usuário " + id);
+        usuario.setEmail("usuario" + id + "@gmail.com");
+        usuario.setTipoUsuario(tipo);
+        return usuario;
+    }
+
     @Nested
     class DeletarUsuario {
 
         @Test
-        @DisplayName("Deletar Usuário")
+        @DisplayName("Root deleta usuário sem histórico")
         void deletarUsuario() {
-            mockAutenticacaoAdmin();
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(3L);
-            tipo.setCargo("professor");
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setTipoUsuario(tipo);
+            mockAutenticacao("root@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "professor");
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(agendamentoRepository.existeAgendamentoDoUsuario(1L)).thenReturn(false);
+            when(saldoRepository.existsByAlunoId(1L)).thenReturn(false);
 
             usuarioService.deletarUsuarioPorId(1L);
             verify(usuarioRepository).delete(usuario);
         }
 
         @Test
-        @DisplayName("Administracao não pode remover usuário root")
-        void administracaoNaoPodeRemoverRoot() {
+        @DisplayName("Administracao não pode excluir usuários definitivamente")
+        void administracaoNaoPodeExcluir() {
             mockAutenticacaoAdmin();
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(1L);
-            tipo.setCargo("root");
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setTipoUsuario(tipo);
+            Usuario usuario = criarUsuarioComCargo(1L, "professor");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.deletarUsuarioPorId(1L));
+
+            assertEquals(403, exception.getStatusCode().value());
+            verify(usuarioRepository, never()).delete(any(Usuario.class));
+        }
+
+        @Test
+        @DisplayName("Root não pode excluir usuário com agendamentos")
+        void naoExcluiUsuarioComAgendamentos() {
+            mockAutenticacao("root@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "professor");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(agendamentoRepository.existeAgendamentoDoUsuario(1L)).thenReturn(true);
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.deletarUsuarioPorId(1L));
+
+            assertEquals(409, exception.getStatusCode().value());
+            verify(usuarioRepository, never()).delete(any(Usuario.class));
+        }
+
+        @Test
+        @DisplayName("Root não pode excluir aluno com saldo")
+        void naoExcluiUsuarioComSaldo() {
+            mockAutenticacao("root@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "aluno");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(agendamentoRepository.existeAgendamentoDoUsuario(1L)).thenReturn(false);
+            when(saldoRepository.existsByAlunoId(1L)).thenReturn(true);
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.deletarUsuarioPorId(1L));
+
+            assertEquals(409, exception.getStatusCode().value());
+            verify(usuarioRepository, never()).delete(any(Usuario.class));
+        }
+
+        @Test
+        @DisplayName("Root não pode excluir o próprio usuário")
+        void rootNaoExcluiASiMesmo() {
+            mockAutenticacao("usuario1@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "root");
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
@@ -820,6 +886,211 @@ class UsuarioServiceTest {
                     () -> usuarioService.deletarUsuarioPorId(300L)
             );
             assertEquals(404, exception.getStatusCode().value());
+        }
+    }
+
+    @Nested
+    class ArquivarUsuario {
+
+        @Test
+        @DisplayName("Arquivar usuário sem agendamentos futuros")
+        void arquivarUsuario() {
+            mockAutenticacaoAdmin();
+            Usuario usuario = criarUsuarioComCargo(1L, "professor");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(agendamentoRepository.contarAgendamentosFuturosDoUsuario(eq(1L), any(LocalDate.class), anyList()))
+                    .thenReturn(0L);
+
+            usuarioService.arquivarUsuarioPorId(1L);
+
+            assertTrue(usuario.isArquivado());
+            verify(usuarioRepository).save(usuario);
+        }
+
+        @Test
+        @DisplayName("Não arquiva usuário com agendamentos futuros")
+        void naoArquivaComAgendamentosFuturos() {
+            mockAutenticacaoAdmin();
+            Usuario usuario = criarUsuarioComCargo(1L, "aluno");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(agendamentoRepository.contarAgendamentosFuturosDoUsuario(eq(1L), any(LocalDate.class), anyList()))
+                    .thenReturn(2L);
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.arquivarUsuarioPorId(1L));
+
+            assertEquals(409, exception.getStatusCode().value());
+            assertTrue(exception.getReason().contains("2 agendamento(s)"));
+            assertFalse(usuario.isArquivado());
+            verify(usuarioRepository, never()).save(any(Usuario.class));
+        }
+
+        @Test
+        @DisplayName("Não arquiva usuário já arquivado")
+        void naoArquivaUsuarioJaArquivado() {
+            mockAutenticacaoAdmin();
+            Usuario usuario = criarUsuarioComCargo(1L, "professor");
+            usuario.setArquivadoEm(LocalDateTime.now());
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.arquivarUsuarioPorId(1L));
+
+            assertEquals(409, exception.getStatusCode().value());
+        }
+
+        @Test
+        @DisplayName("Root não pode ser arquivado")
+        void rootNaoPodeSerArquivado() {
+            mockAutenticacao("outro-root@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "root");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.arquivarUsuarioPorId(1L));
+
+            assertEquals(403, exception.getStatusCode().value());
+        }
+
+        @Test
+        @DisplayName("Administracao não pode arquivar outro administrador")
+        void administracaoNaoArquivaAdministracao() {
+            mockAutenticacaoAdmin();
+            Usuario usuario = criarUsuarioComCargo(1L, "administracao");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.arquivarUsuarioPorId(1L));
+
+            assertEquals(403, exception.getStatusCode().value());
+        }
+
+        @Test
+        @DisplayName("Root pode arquivar administrador")
+        void rootArquivaAdministracao() {
+            mockAutenticacao("root@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "administracao");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(agendamentoRepository.contarAgendamentosFuturosDoUsuario(eq(1L), any(LocalDate.class), anyList()))
+                    .thenReturn(0L);
+
+            usuarioService.arquivarUsuarioPorId(1L);
+
+            assertTrue(usuario.isArquivado());
+        }
+
+        @Test
+        @DisplayName("Usuário não pode arquivar a si mesmo")
+        void naoArquivaASiMesmo() {
+            mockAutenticacao("usuario1@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "administracao");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.arquivarUsuarioPorId(1L));
+
+            assertEquals(403, exception.getStatusCode().value());
+        }
+
+        @Test
+        @DisplayName("Arquivar usuário inexistente")
+        void arquivarUsuarioInexistente() {
+            when(usuarioRepository.findById(300L)).thenReturn(Optional.empty());
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.arquivarUsuarioPorId(300L));
+
+            assertEquals(404, exception.getStatusCode().value());
+        }
+    }
+
+    @Nested
+    class DesarquivarUsuario {
+
+        @Test
+        @DisplayName("Desarquivar usuário arquivado")
+        void desarquivarUsuario() {
+            mockAutenticacaoAdmin();
+            Usuario usuario = criarUsuarioComCargo(1L, "aluno");
+            usuario.setArquivadoEm(LocalDateTime.now());
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            usuarioService.desarquivarUsuarioPorId(1L);
+
+            assertFalse(usuario.isArquivado());
+            verify(usuarioRepository).save(usuario);
+        }
+
+        @Test
+        @DisplayName("Não desarquiva usuário ativo")
+        void naoDesarquivaUsuarioAtivo() {
+            mockAutenticacaoAdmin();
+            Usuario usuario = criarUsuarioComCargo(1L, "aluno");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.desarquivarUsuarioPorId(1L));
+
+            assertEquals(409, exception.getStatusCode().value());
+        }
+    }
+
+    @Nested
+    class RegrasUsuarioArquivado {
+
+        @Test
+        @DisplayName("Login de usuário arquivado retorna 403")
+        void loginUsuarioArquivado() {
+            LoginRequest request = new LoginRequest();
+            request.setEmail("arquivado@gmail.com");
+            request.setSenha("teste123*");
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenThrow(new DisabledException("Usuário arquivado"));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.logarUsuario(request));
+
+            assertEquals(403, exception.getStatusCode().value());
+        }
+
+        @Test
+        @DisplayName("Não atualiza usuário arquivado")
+        void naoAtualizaUsuarioArquivado() {
+            Usuario usuario = criarUsuarioComCargo(1L, "professor");
+            usuario.setArquivadoEm(LocalDateTime.now());
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.atualizarUsuarioPorId(1L, new UsuarioRequest()));
+
+            assertEquals(409, exception.getStatusCode().value());
+        }
+
+        @Test
+        @DisplayName("Cadastro com email de usuário arquivado sugere desarquivar")
+        void cadastroComEmailDeArquivado() {
+            mockAutenticacaoAdmin();
+            UsuarioRequest request = new UsuarioRequest();
+            request.setEmail("usuario1@gmail.com");
+            Usuario arquivado = criarUsuarioComCargo(1L, "professor");
+            arquivado.setArquivadoEm(LocalDateTime.now());
+            when(usuarioRepository.existsByEmail("usuario1@gmail.com")).thenReturn(true);
+            when(usuarioRepository.findByEmail("usuario1@gmail.com")).thenReturn(Optional.of(arquivado));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.criarUsuario(request));
+
+            assertEquals(409, exception.getStatusCode().value());
+            assertTrue(exception.getReason().contains("arquivado"));
+        }
+
+        @Test
+        @DisplayName("Status de busca inválido retorna 400")
+        void statusBuscaInvalido() {
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.buscarUsuarios(PageRequest.of(0, 10), null, null, null, null, null, "qualquer"));
+
+            assertEquals(400, exception.getStatusCode().value());
         }
     }
 }

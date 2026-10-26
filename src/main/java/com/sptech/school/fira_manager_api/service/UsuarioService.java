@@ -1,5 +1,6 @@
 package com.sptech.school.fira_manager_api.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,7 +46,9 @@ import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
 import com.sptech.school.fira_manager_api.model.Usuario;
+import com.sptech.school.fira_manager_api.repository.AgendamentoRepository;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
+import com.sptech.school.fira_manager_api.repository.SaldoRepository;
 import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
 
@@ -57,9 +61,12 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final AuthenticationManager authenticationManager;
+    private final AgendamentoRepository agendamentoRepository;
+    private final SaldoRepository saldoRepository;
     private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
     private static final int MAX_TENTATIVAS = 5;
     private static final int MINUTOS_BLOQUEADOS = 15;
+    private static final List<String> STATUS_AGENDAMENTO_ATIVO = List.of("pendente", "confirmado");
     private final Map<String, ControleLoginService> controleLogins = new ConcurrentHashMap<>();
 
     public UsuarioService(UsuarioRepository usuarioRepository,
@@ -67,13 +74,17 @@ public class UsuarioService {
                           CondominioRepository condominioRepository,
                           PasswordEncoder passwordEncoder,
                           GerenciadorTokenJwt gerenciadorTokenJwt,
-                          @Lazy AuthenticationManager authenticationManager) {
+                          @Lazy AuthenticationManager authenticationManager,
+                          AgendamentoRepository agendamentoRepository,
+                          SaldoRepository saldoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.tipoUsuarioRepository = tipoUsuarioRepository;
         this.condominioRepository = condominioRepository;
         this.passwordEncoder = passwordEncoder;
         this.gerenciadorTokenJwt = gerenciadorTokenJwt;
         this.authenticationManager = authenticationManager;
+        this.agendamentoRepository = agendamentoRepository;
+        this.saldoRepository = saldoRepository;
     }
 
     public UsuarioResponse criarUsuario(UsuarioRequest dto) {
@@ -88,11 +99,21 @@ public class UsuarioService {
         }
 
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email já cadastrado");
+            boolean arquivado = usuarioRepository.findByEmail(dto.getEmail())
+                    .map(Usuario::isArquivado)
+                    .orElse(false);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, arquivado
+                    ? "Email pertence a um usuário arquivado. Desarquive-o em vez de cadastrar novamente"
+                    : "Email já cadastrado");
         }
 
         if (usuarioRepository.existsByTelefone(dto.getTelefone())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Telefone já cadastrado");
+            boolean arquivado = usuarioRepository.findByTelefone(dto.getTelefone())
+                    .map(Usuario::isArquivado)
+                    .orElse(false);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, arquivado
+                    ? "Telefone pertence a um usuário arquivado. Desarquive-o em vez de cadastrar novamente"
+                    : "Telefone já cadastrado");
         }
 
         TipoUsuario tipoUsuario = tipoUsuarioRepository.findById(dto.getTipoUsuario())
@@ -168,6 +189,10 @@ public class UsuarioService {
             }
 
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+        } catch (DisabledException e) {
+            controle.resetar();
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Usuário arquivado. Entre em contato com a administração");
         }
     }
 
@@ -177,8 +202,13 @@ public class UsuarioService {
             List<Long> tipoUsuarioIds,
             List<String> tipoUsuarioCargos,
             String campo,
-            String busca) {
+            String busca,
+            String status) {
         Pageable pageableEstavel = comOrdenacaoEstavel(pageable);
+        String statusBusca = status == null || status.isBlank() ? "ATIVO" : status.trim().toUpperCase(Locale.ROOT);
+        if (!List.of("ATIVO", "ARQUIVADO", "TODOS").contains(statusBusca)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status inválido. Use ATIVO, ARQUIVADO ou TODOS");
+        }
         String valorBusca = busca == null || busca.isBlank() ? nome : busca;
         String campoBusca = campo == null || campo.isBlank() ? "nome" : campo;
         String termo = valorBusca == null ? null : valorBusca.trim().toLowerCase(Locale.ROOT);
@@ -191,6 +221,12 @@ public class UsuarioService {
 
         Specification<Usuario> specification = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            switch (statusBusca) {
+                case "ATIVO" -> predicates.add(criteriaBuilder.isNull(root.get("arquivadoEm")));
+                case "ARQUIVADO" -> predicates.add(criteriaBuilder.isNotNull(root.get("arquivadoEm")));
+                default -> { }
+            }
 
             if (tipoUsuarioIds != null && !tipoUsuarioIds.isEmpty()) {
                 predicates.add(root.join("tipoUsuario").get("id").in(tipoUsuarioIds));
@@ -237,8 +273,18 @@ public class UsuarioService {
         return PaginaResponse.from(usuarios.map(UsuarioMapper::toResponse));
     }
 
+    public PaginaResponse<UsuarioResponse> buscarUsuarios(
+            Pageable pageable,
+            String nome,
+            List<Long> tipoUsuarioIds,
+            List<String> tipoUsuarioCargos,
+            String campo,
+            String busca) {
+        return buscarUsuarios(pageable, nome, tipoUsuarioIds, tipoUsuarioCargos, campo, busca, null);
+    }
+
     public PaginaResponse<UsuarioResponse> buscarUsuarios(Pageable pageable, String nome, List<Long> tipoUsuarioIds) {
-        return buscarUsuarios(pageable, nome, tipoUsuarioIds, null, null, null);
+        return buscarUsuarios(pageable, nome, tipoUsuarioIds, null, null, null, null);
     }
 
     public UsuarioResponse buscarUsuarioPorId(Long id) {
@@ -261,6 +307,11 @@ public class UsuarioService {
     public UsuarioResponse atualizarUsuarioPorId(Long id, UsuarioRequest dto) {
         Usuario usuarioNovo = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
+
+        if (usuarioNovo.isArquivado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Usuário arquivado. Desarquive-o antes de editar");
+        }
 
         Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
         boolean alunoAtualizandoPerfil = autenticacao != null && autenticacao.getAuthorities().stream()
@@ -302,15 +353,96 @@ public class UsuarioService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
 
         Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
-        if (administracaoNaoPodeRemoverCargo(autenticacao, usuario.getTipoUsuario())) {
+        if (!possuiCargo(autenticacao, "ROLE_ROOT")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Somente root pode remover usuários root ou de administração");
+                    "Somente root pode excluir usuários definitivamente");
+        }
+
+        if (ehUsuarioAutenticado(autenticacao, usuario)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não é possível excluir o próprio usuário");
+        }
+
+        if (agendamentoRepository.existeAgendamentoDoUsuario(id) || saldoRepository.existsByAlunoId(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Usuário possui histórico de agendamentos ou saldos. Arquive-o em vez de excluir");
         }
 
         usuarioRepository.delete(usuario);
 
         log.info("Usuário deletado - id={}",
                 id);
+    }
+
+    public void arquivarUsuarioPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
+
+        validarPermissaoArquivamento(usuario);
+
+        if (usuario.isArquivado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Usuário já está arquivado");
+        }
+
+        if (usuario.getTipoUsuario().getCargo().equalsIgnoreCase("root")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuários root não podem ser arquivados");
+        }
+
+        long agendamentosFuturos = agendamentoRepository.contarAgendamentosFuturosDoUsuario(
+                id, LocalDate.now(), STATUS_AGENDAMENTO_ATIVO);
+        if (agendamentosFuturos > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Usuário possui " + agendamentosFuturos
+                            + " agendamento(s) futuro(s) pendente(s) ou confirmado(s). Cancele-os antes de arquivar");
+        }
+
+        usuario.setArquivadoEm(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+
+        log.info("Usuário arquivado - id={}", id);
+    }
+
+    public void desarquivarUsuarioPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O usuário não existe"));
+
+        validarPermissaoArquivamento(usuario);
+
+        if (!usuario.isArquivado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Usuário não está arquivado");
+        }
+
+        usuario.setArquivadoEm(null);
+        usuarioRepository.save(usuario);
+
+        log.info("Usuário desarquivado - id={}", id);
+    }
+
+    private void validarPermissaoArquivamento(Usuario usuario) {
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        if (!possuiCargo(autenticacao, "ROLE_ROOT") && !possuiCargo(autenticacao, "ROLE_ADMINISTRACAO")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Somente administradores podem arquivar ou desarquivar usuários");
+        }
+
+        if (administracaoNaoPodeRemoverCargo(autenticacao, usuario.getTipoUsuario())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Somente root pode arquivar ou desarquivar usuários root ou de administração");
+        }
+
+        if (ehUsuarioAutenticado(autenticacao, usuario)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Não é possível arquivar ou desarquivar o próprio usuário");
+        }
+    }
+
+    private boolean possuiCargo(Authentication autenticacao, String cargo) {
+        return autenticacao != null && autenticacao.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals(cargo));
+    }
+
+    private boolean ehUsuarioAutenticado(Authentication autenticacao, Usuario usuario) {
+        return autenticacao != null && usuario.getEmail() != null
+                && usuario.getEmail().equalsIgnoreCase(autenticacao.getName());
     }
 
     private boolean administracaoNaoPodeRemoverCargo(Authentication autenticacao, TipoUsuario tipoUsuario) {

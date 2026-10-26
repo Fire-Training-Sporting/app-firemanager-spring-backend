@@ -33,6 +33,12 @@ public class UsuarioResponse {
     @Schema(description = "Data de criação do usuário", example = "03/04/2026 11:43:49")
     private LocalDateTime criadoEm;
 
+    @Schema(description = "Indica se o usuário está arquivado", example = "false")
+    private Boolean arquivado;
+
+    @Schema(description = "Data em que o usuário foi arquivado. Null se estiver ativo", example = "03/04/2026 11:43:49")
+    private LocalDateTime arquivadoEm;
+
     public UsuarioResponse(Long id, String nome, String email, String telefone) {
         this.id = id;
         this.nome = nome;
@@ -105,5 +111,21 @@ public class UsuarioResponse {
 
     public void setCriadoEm(LocalDateTime criadoEm) {
         this.criadoEm = criadoEm;
+    }
+
+    public Boolean getArquivado() {
+        return arquivado;
+    }
+
+    public void setArquivado(Boolean arquivado) {
+        this.arquivado = arquivado;
+    }
+
+    public LocalDateTime getArquivadoEm() {
+        return arquivadoEm;
+    }
+
+    public void setArquivadoEm(LocalDateTime arquivadoEm) {
+        this.arquivadoEm = arquivadoEm;
     }
 }

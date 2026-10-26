@@ -96,6 +96,26 @@ class SaldoServiceTest {
         verify(saldoRepository, atLeastOnce()).save(any(Saldo.class));
     }
 
+    @Test
+    void naoDeveCriarSaldoParaAlunoArquivado() {
+        SaldoRequest dto = new SaldoRequest();
+        dto.setAluno(1L);
+        dto.setServico(1L);
+        dto.setQuantidade(5.0);
+
+        Usuario aluno = new Usuario();
+        aluno.setId(1L);
+        aluno.setArquivadoEm(java.time.LocalDateTime.now());
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(aluno));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.criarSaldo(dto));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        verify(saldoRepository, never()).save(any(Saldo.class));
+    }
+
     // -----------------------------
     // LISTAR
     // -----------------------------

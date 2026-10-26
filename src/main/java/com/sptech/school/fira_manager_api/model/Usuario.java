@@ -53,6 +53,10 @@ public class Usuario {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "arquivado_em")
+    private LocalDateTime arquivadoEm;
+
     public Usuario() {
     }
 
@@ -145,5 +149,18 @@ public class Usuario {
 
     public LocalDateTime getCriadoEm() {
         return criadoEm;
+    }
+
+    public LocalDateTime getArquivadoEm() {
+        return arquivadoEm;
+    }
+
+    public void setArquivadoEm(LocalDateTime arquivadoEm) {
+        this.arquivadoEm = arquivadoEm;
+    }
+
+    @JsonIgnore
+    public boolean isArquivado() {
+        return arquivadoEm != null;
     }
 }
