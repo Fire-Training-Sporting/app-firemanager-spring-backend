@@ -4,6 +4,7 @@ import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.UsuarioDetalhesDto;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.LoginRequest;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.UsuarioRequest;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
 import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
@@ -13,18 +14,25 @@ import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import com.sptech.school.fira_manager_api.repository.TipoUsuarioRepository;
 import com.sptech.school.fira_manager_api.repository.UsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -48,6 +56,11 @@ class UsuarioServiceTest {
     @InjectMocks
     private UsuarioService usuarioService;
 
+    @AfterEach
+    void limparAutenticacao() {
+        SecurityContextHolder.clearContext();
+    }
+
     private void mockAutenticacaoAdmin() {
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 "admin",
@@ -65,20 +78,19 @@ class UsuarioServiceTest {
         void cadastrarUsuarioFuncionario() {
             mockAutenticacaoAdmin();
             UsuarioRequest request = new UsuarioRequest();
-            request.setTipoUsuario(1L);
+            request.setTipoUsuario(3L);
             request.setNome("Marcos Vinicius");
             request.setEmail("marcos@gmail.com");
             request.setTelefone("11935234123");
             request.setSenha("teste123*");
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
             TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(1L);
-            tipo.setCargo("root");
-            when(tipoUsuarioRepository.findById(1L)).thenReturn(Optional.of(tipo));
+            tipo.setId(3L);
+            tipo.setCargo("professor");
+            when(tipoUsuarioRepository.findById(3L)).thenReturn(Optional.of(tipo));
 
             when(passwordEncoder.encode("teste123*")).thenReturn("luanWasHere");
 
@@ -94,6 +106,38 @@ class UsuarioServiceTest {
         }
 
         @Test
+        @DisplayName("Administracao pode criar usuários root")
+        void administracaoPodeCriarRoot() {
+            mockAutenticacaoAdmin();
+            UsuarioRequest request = new UsuarioRequest();
+            request.setTipoUsuario(1L);
+            request.setNome("Novo root");
+            request.setEmail("root@gmail.com");
+            request.setTelefone("11935234123");
+            request.setSenha("teste123*");
+
+            when(usuarioRepository.existsByEmail("root@gmail.com")).thenReturn(false);
+            when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
+
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(1L);
+            tipo.setCargo("root");
+            when(tipoUsuarioRepository.findById(1L)).thenReturn(Optional.of(tipo));
+
+            when(passwordEncoder.encode("teste123*")).thenReturn("senhaCriptografada");
+            Usuario usuarioSalvo = new Usuario(tipo, "Novo root", "root@gmail.com",
+                    "11935234123", "senhaCriptografada");
+            usuarioSalvo.setId(1L);
+            when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
+
+            UsuarioResponse response = usuarioService.criarUsuario(request);
+
+            assertNotNull(response);
+            assertEquals("Novo root", response.getNome());
+            verify(usuarioRepository).save(any(Usuario.class));
+        }
+
+        @Test
         @DisplayName("Cadastrar Aluno Sucesso")
         void cadastrarUsuarioAluno() {
             mockAutenticacaoAdmin();
@@ -105,7 +149,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(1L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
@@ -135,26 +178,6 @@ class UsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("Cadastro Falho - Nome Cadastrado")
-        void cadastrarUsuarioNomeRepetido() {
-            mockAutenticacaoAdmin();
-            UsuarioRequest request = new UsuarioRequest();
-            request.setTipoUsuario(4L);
-            request.setNome("Marcos Vinicius");
-            request.setEmail("marcos@gmail.com");
-            request.setTelefone("11935234123");
-            request.setSenha("teste123*");
-            request.setCondominio(1L);
-
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(true);
-
-            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                    () -> usuarioService.criarUsuario(request)
-            );
-            assertEquals(409, exception.getStatusCode().value());
-        }
-
-        @Test
         @DisplayName("Cadastro Falho - Email Cadastrado")
         void cadastrarUsuarioEmailRepetido() {
             mockAutenticacaoAdmin();
@@ -166,7 +189,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(1L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(true);
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
@@ -187,7 +209,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(1L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(true);
 
@@ -208,7 +229,6 @@ class UsuarioServiceTest {
             request.setTelefone("11935234123");
             request.setSenha("teste123*");
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
             when(tipoUsuarioRepository.findById(99L)).thenReturn(Optional.empty());
@@ -231,7 +251,6 @@ class UsuarioServiceTest {
             request.setSenha("teste123*");
             request.setCondominio(100L);
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
@@ -261,7 +280,6 @@ class UsuarioServiceTest {
             request.setTelefone("11935234123");
             request.setSenha("teste123*");
 
-            when(usuarioRepository.existsByNome("Marcos Vinicius")).thenReturn(false);
             when(usuarioRepository.existsByEmail("marcos@gmail.com")).thenReturn(false);
             when(usuarioRepository.existsByTelefone("11935234123")).thenReturn(false);
 
@@ -279,6 +297,80 @@ class UsuarioServiceTest {
 
     @Nested
     class Login {
+
+        @Test
+        @DisplayName("Login bloqueado após 5 tentativas falhas")
+        void bloquearAposCincoTentativasFalhas() {
+            LoginRequest request = new LoginRequest();
+            request.setEmail("marcos@gmail.com");
+            request.setSenha("senhaErrada");
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenThrow(new BadCredentialsException("Credenciais inválidas"));
+
+            for (int i = 0; i < 5; i++) {
+                ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                        () -> usuarioService.logarUsuario(request));
+                assertEquals(401, exception.getStatusCode().value());
+            }
+
+            ResponseStatusException bloqueado = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.logarUsuario(request));
+            assertEquals(423, bloqueado.getStatusCode().value());
+
+            verify(authenticationManager, times(5)).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        }
+
+        @Test
+        @DisplayName("Login com sucesso reseta contador de tentativas falhas")
+        void loginSucessoResetaContador() {
+            LoginRequest requestErrado = new LoginRequest();
+            requestErrado.setEmail("marcos@gmail.com");
+            requestErrado.setSenha("senhaErrada");
+
+            LoginRequest requestCerto = new LoginRequest();
+            requestCerto.setEmail("marcos@gmail.com");
+            requestCerto.setSenha("teste123*");
+
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(1L);
+            tipo.setCargo("root");
+
+            Usuario usuario = new Usuario();
+            usuario.setId(1L);
+            usuario.setNome("Marcos Vinicius");
+            usuario.setEmail("marcos@gmail.com");
+            usuario.setTipoUsuario(tipo);
+
+            UsuarioDetalhesDto detalhes = new UsuarioDetalhesDto(usuario);
+            Authentication autenticacaoOk = mock(Authentication.class);
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenAnswer(invocation -> {
+                        UsernamePasswordAuthenticationToken token = invocation.getArgument(0);
+                        if ("teste123*".equals(token.getCredentials())) {
+                            return autenticacaoOk;
+                        }
+                        throw new BadCredentialsException("Credenciais inválidas");
+                    });
+            when(autenticacaoOk.getPrincipal()).thenReturn(detalhes);
+            when(gerenciadorTokenJwt.generateToken(detalhes)).thenReturn("token-vitao");
+
+            for (int i = 0; i < 4; i++) {
+                assertThrows(ResponseStatusException.class, () -> usuarioService.logarUsuario(requestErrado));
+            }
+
+            assertNotNull(usuarioService.logarUsuario(requestCerto));
+
+            // depois do sucesso, mais 4 erradas não deveriam bloquear (contador zerou)
+            for (int i = 0; i < 4; i++) {
+                assertThrows(ResponseStatusException.class, () -> usuarioService.logarUsuario(requestErrado));
+            }
+
+            UsuarioTokenResponse response = usuarioService.logarUsuario(requestCerto);
+            assertNotNull(response);
+            assertEquals("token-vitao", response.getToken());
+        }
 
         @Test
         @DisplayName("Login com sucesso")
@@ -398,12 +490,23 @@ class UsuarioServiceTest {
             usuario2.setTelefone("11912345678");
             usuario2.setTipoUsuario(tipo);
 
-            when(usuarioRepository.findAll()).thenReturn(List.of(usuario1, usuario2));
+            Pageable pageable = PageRequest.of(1, 5);
+            when(usuarioRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(usuario1, usuario2), pageable, 12));
 
-            List<UsuarioResponse> response = usuarioService.buscarUsuarios();
+            PaginaResponse<UsuarioResponse> response =
+                    usuarioService.buscarUsuarios(pageable, null, null);
 
             assertNotNull(response);
-            assertEquals(2, response.size());
+            assertEquals(2, response.content().size());
+            assertEquals(1, response.page());
+            assertEquals(5, response.size());
+            assertEquals(12, response.totalElements());
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(usuarioRepository).findAll(any(Specification.class), pageableCaptor.capture());
+            assertEquals(1, pageableCaptor.getValue().getPageNumber());
+            assertEquals(5, pageableCaptor.getValue().getPageSize());
+            assertNotNull(pageableCaptor.getValue().getSort().getOrderFor("id"));
         }
 
         @Test
@@ -453,14 +556,20 @@ class UsuarioServiceTest {
             usuario.setTelefone("11935234123");
             usuario.setTipoUsuario(tipo);
 
-            when(usuarioRepository.findByNomeContainingIgnoreCase("Marcos"))
-                    .thenReturn(List.of(usuario));
+            Pageable pageable = PageRequest.of(0, 10);
+            when(usuarioRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(usuario), pageable, 1));
 
-            List<UsuarioResponse> response = usuarioService.buscarUsuarioPorNome("Marcos");
+            PaginaResponse<UsuarioResponse> response =
+                    usuarioService.buscarUsuarios(pageable, "Marcos", null);
 
             assertNotNull(response);
-            assertEquals(1, response.size());
-            assertEquals("Marcos Vinicius", response.get(0).getNome());
+            assertEquals(1, response.content().size());
+            assertEquals("Marcos Vinicius", response.content().get(0).getNome());
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(usuarioRepository).findAll(any(Specification.class), pageableCaptor.capture());
+            assertEquals(0, pageableCaptor.getValue().getPageNumber());
+            assertEquals(10, pageableCaptor.getValue().getPageSize());
         }
     }
 
@@ -670,16 +779,42 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deletar Usuário")
         void deletarUsuario() {
-            when(usuarioRepository.existsById(1L)).thenReturn(true);
+            mockAutenticacaoAdmin();
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(3L);
+            tipo.setCargo("professor");
+            Usuario usuario = new Usuario();
+            usuario.setId(1L);
+            usuario.setTipoUsuario(tipo);
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
 
             usuarioService.deletarUsuarioPorId(1L);
-            verify(usuarioRepository).deleteById(1L);
+            verify(usuarioRepository).delete(usuario);
+        }
+
+        @Test
+        @DisplayName("Administracao não pode remover usuário root")
+        void administracaoNaoPodeRemoverRoot() {
+            mockAutenticacaoAdmin();
+            TipoUsuario tipo = new TipoUsuario();
+            tipo.setId(1L);
+            tipo.setCargo("root");
+            Usuario usuario = new Usuario();
+            usuario.setId(1L);
+            usuario.setTipoUsuario(tipo);
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.deletarUsuarioPorId(1L));
+
+            assertEquals(403, exception.getStatusCode().value());
+            verify(usuarioRepository, never()).delete(any(Usuario.class));
         }
 
         @Test
         @DisplayName("Falha Deletar Usuário")
         void deletarUsuarioFalho() {
-            when(usuarioRepository.existsById(300L)).thenReturn(false);
+            when(usuarioRepository.findById(300L)).thenReturn(Optional.empty());
 
             ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                     () -> usuarioService.deletarUsuarioPorId(300L)

@@ -4,6 +4,8 @@ import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRe
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoRequest;
 import com.sptech.school.fira_manager_api.dto.requests.agendamento.AgendamentoStatusRequest;
 import com.sptech.school.fira_manager_api.client.NotificationServiceClient;
+import com.sptech.school.fira_manager_api.config.SegurancaAutorizacao;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.dto.responses.agendamento.AgendamentoResponse;
 import com.sptech.school.fira_manager_api.model.*;
 import com.sptech.school.fira_manager_api.repository.*;
@@ -11,9 +13,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -24,6 +30,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +43,7 @@ class AgendamentoServiceTest {
     @Mock private SaldoRepository saldoRepository;
     @Mock private SaldoTransacaoRepository saldoTransacaoRepository;
     @Mock private NotificationServiceClient client;
+    @Mock private SegurancaAutorizacao segurancaAutorizacao;
 
     @InjectMocks
     private AgendamentoService agendamentoService;
@@ -421,13 +429,23 @@ class AgendamentoServiceTest {
             Agendamento ag2 = criarAgendamentoSalvo(aluno, professor, servico, condominio);
             ag2.setId(2L);
 
-            when(agendamentoRepository.findAll()).thenReturn(List.of(ag1, ag2));
+            Pageable pageable = PageRequest.of(1, 10);
+            when(agendamentoRepository.findAll(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(ag1, ag2), pageable, 22));
             when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
-            List<AgendamentoResponse> response = agendamentoService.listarAgendamento();
+            PaginaResponse<AgendamentoResponse> response = agendamentoService.listarAgendamento(pageable);
 
             assertNotNull(response);
-            assertEquals(2, response.size());
+            assertEquals(2, response.content().size());
+            assertEquals(1, response.page());
+            assertEquals(10, response.size());
+            assertEquals(22, response.totalElements());
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(agendamentoRepository).findAll(pageableCaptor.capture());
+            assertEquals(1, pageableCaptor.getValue().getPageNumber());
+            assertEquals(10, pageableCaptor.getValue().getPageSize());
+            assertNotNull(pageableCaptor.getValue().getSort().getOrderFor("id"));
         }
 
         @Test
@@ -814,14 +832,21 @@ class AgendamentoServiceTest {
             Saldo saldo = criarSaldo(aluno, servico, 5.0);
             Agendamento agendamento = criarAgendamentoSalvo(aluno, professor, servico, condominio);
 
-            when(agendamentoRepository.findAllByStatus("pendente")).thenReturn(List.of(agendamento));
+            Pageable pageable = PageRequest.of(0, 10);
+            when(agendamentoRepository.findAllByStatus(eq("pendente"), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(agendamento), pageable, 1));
             when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
 
-            List<AgendamentoResponse> response = agendamentoService.buscarAgendamentoPorStatus("pendente");
+            PaginaResponse<AgendamentoResponse> response =
+                    agendamentoService.buscarAgendamentoPorStatus("pendente", pageable);
 
             assertNotNull(response);
-            assertEquals(1, response.size());
-            assertEquals("pendente", response.get(0).getStatus());
+            assertEquals(1, response.content().size());
+            assertEquals("pendente", response.content().get(0).getStatus());
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(agendamentoRepository).findAllByStatus(eq("pendente"), pageableCaptor.capture());
+            assertEquals(0, pageableCaptor.getValue().getPageNumber());
+            assertEquals(10, pageableCaptor.getValue().getPageSize());
         }
     }
 

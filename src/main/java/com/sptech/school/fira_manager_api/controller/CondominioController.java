@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.controller;
 
 import com.sptech.school.fira_manager_api.dto.requests.condominio.CondominioRequest;
 import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
+import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.service.CondominioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,6 +11,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,6 +51,14 @@ public class CondominioController {
     @GetMapping
     public ResponseEntity<List<CondominioResponse>> buscarCondominio() {
         return ResponseEntity.ok(condominioService.obterCondominios());
+    }
+
+    @GetMapping("/paginado")
+    public ResponseEntity<PaginaResponse<CondominioResponse>> buscarCondominiosPaginados(
+            @RequestParam(required = false) String campo,
+            @RequestParam(required = false) String busca,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(condominioService.obterCondominios(pageable, campo, busca));
     }
 
     @Operation(summary = "Atualiza condominio por ID", description = "Atualiza os dados de um condominio existente")
