@@ -130,10 +130,12 @@ public class UsuarioService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Condomínio não encontrado"));
 
             Usuario usuarioAluno = UsuarioMapper.toEntity(dto, tipoUsuario, senhaCriptografada, condominio);
+            usuarioAluno.setCriadoPor(buscarUsuarioAutenticado());
             return UsuarioMapper.toResponse(usuarioRepository.save(usuarioAluno));
         }
 
         Usuario usuarioNovo = UsuarioMapper.toEntity(dto, tipoUsuario, senhaCriptografada, null);
+        usuarioNovo.setCriadoPor(buscarUsuarioAutenticado());
 
         Usuario usuarioSalvo = usuarioRepository.save(usuarioNovo);
 
@@ -367,6 +369,11 @@ public class UsuarioService {
                     "Usuário possui histórico de agendamentos ou saldos. Arquive-o em vez de excluir");
         }
 
+        if (usuarioRepository.existsByArquivadoPor_Id(id) || usuarioRepository.existsByCriadoPor_Id(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Usuário possui histórico de cadastros ou arquivamentos. Arquive-o em vez de excluir");
+        }
+
         usuarioRepository.delete(usuario);
 
         log.info("Usuário deletado - id={}",
@@ -395,10 +402,13 @@ public class UsuarioService {
                             + " agendamento(s) futuro(s) pendente(s) ou confirmado(s). Cancele-os antes de arquivar");
         }
 
+        Usuario arquivador = buscarUsuarioAutenticado();
+
         usuario.setArquivadoEm(LocalDateTime.now());
+        usuario.setArquivadoPor(arquivador);
         usuarioRepository.save(usuario);
 
-        log.info("Usuário arquivado - id={}", id);
+        log.info("Usuário arquivado - id={}, arquivadoPor={}", id, arquivador.getId());
     }
 
     public void desarquivarUsuarioPorId(Long id) {
@@ -412,6 +422,7 @@ public class UsuarioService {
         }
 
         usuario.setArquivadoEm(null);
+        usuario.setArquivadoPor(null);
         usuarioRepository.save(usuario);
 
         log.info("Usuário desarquivado - id={}", id);
@@ -433,6 +444,13 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Não é possível arquivar ou desarquivar o próprio usuário");
         }
+    }
+
+    private Usuario buscarUsuarioAutenticado() {
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        return usuarioRepository.findByEmail(autenticacao.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Usuário autenticado não encontrado"));
     }
 
     private boolean possuiCargo(Authentication autenticacao, String cargo) {

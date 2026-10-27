@@ -33,11 +33,23 @@ public class UsuarioResponse {
     @Schema(description = "Data de criação do usuário", example = "03/04/2026 11:43:49")
     private LocalDateTime criadoEm;
 
+    @Schema(description = "ID do usuário que realizou o cadastro. Null para usuários criados pelo sistema", example = "1")
+    private Long criadoPorId;
+
+    @Schema(description = "Nome do usuário que realizou o cadastro. Null para usuários criados pelo sistema", example = "Maria Souza")
+    private String criadoPorNome;
+
     @Schema(description = "Indica se o usuário está arquivado", example = "false")
     private Boolean arquivado;
 
     @Schema(description = "Data em que o usuário foi arquivado. Null se estiver ativo", example = "03/04/2026 11:43:49")
     private LocalDateTime arquivadoEm;
+
+    @Schema(description = "ID do usuário que realizou o arquivamento. Null se estiver ativo", example = "1")
+    private Long arquivadoPorId;
+
+    @Schema(description = "Nome do usuário que realizou o arquivamento. Null se estiver ativo", example = "Maria Souza")
+    private String arquivadoPorNome;
 
     public UsuarioResponse(Long id, String nome, String email, String telefone) {
         this.id = id;
@@ -113,6 +125,22 @@ public class UsuarioResponse {
         this.criadoEm = criadoEm;
     }
 
+    public Long getCriadoPorId() {
+        return criadoPorId;
+    }
+
+    public void setCriadoPorId(Long criadoPorId) {
+        this.criadoPorId = criadoPorId;
+    }
+
+    public String getCriadoPorNome() {
+        return criadoPorNome;
+    }
+
+    public void setCriadoPorNome(String criadoPorNome) {
+        this.criadoPorNome = criadoPorNome;
+    }
+
     public Boolean getArquivado() {
         return arquivado;
     }
@@ -127,5 +155,21 @@ public class UsuarioResponse {
 
     public void setArquivadoEm(LocalDateTime arquivadoEm) {
         this.arquivadoEm = arquivadoEm;
+    }
+
+    public Long getArquivadoPorId() {
+        return arquivadoPorId;
+    }
+
+    public void setArquivadoPorId(Long arquivadoPorId) {
+        this.arquivadoPorId = arquivadoPorId;
+    }
+
+    public String getArquivadoPorNome() {
+        return arquivadoPorNome;
+    }
+
+    public void setArquivadoPorNome(String arquivadoPorNome) {
+        this.arquivadoPorNome = arquivadoPorNome;
     }
 }

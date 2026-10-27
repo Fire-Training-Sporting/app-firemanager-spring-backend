@@ -53,9 +53,19 @@ public class Usuario {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "criado_por", updatable = false)
+    private Usuario criadoPor;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "arquivado_em")
     private LocalDateTime arquivadoEm;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "arquivado_por")
+    private Usuario arquivadoPor;
 
     public Usuario() {
     }
@@ -151,12 +161,28 @@ public class Usuario {
         return criadoEm;
     }
 
+    public Usuario getCriadoPor() {
+        return criadoPor;
+    }
+
+    public void setCriadoPor(Usuario criadoPor) {
+        this.criadoPor = criadoPor;
+    }
+
     public LocalDateTime getArquivadoEm() {
         return arquivadoEm;
     }
 
     public void setArquivadoEm(LocalDateTime arquivadoEm) {
         this.arquivadoEm = arquivadoEm;
+    }
+
+    public Usuario getArquivadoPor() {
+        return arquivadoPor;
+    }
+
+    public void setArquivadoPor(Usuario arquivadoPor) {
+        this.arquivadoPor = arquivadoPor;
     }
 
     @JsonIgnore

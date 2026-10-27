@@ -45,8 +45,16 @@ public class UsuarioMapper {
                 condominioResponse,
                 usuario.getCriadoEm()
         );
+        if (usuario.getCriadoPor() != null) {
+            response.setCriadoPorId(usuario.getCriadoPor().getId());
+            response.setCriadoPorNome(usuario.getCriadoPor().getNome());
+        }
         response.setArquivado(usuario.isArquivado());
         response.setArquivadoEm(usuario.getArquivadoEm());
+        if (usuario.getArquivadoPor() != null) {
+            response.setArquivadoPorId(usuario.getArquivadoPor().getId());
+            response.setArquivadoPorNome(usuario.getArquivadoPor().getNome());
+        }
         return response;
     }
 

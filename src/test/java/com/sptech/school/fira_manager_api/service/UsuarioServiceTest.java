@@ -103,6 +103,9 @@ class UsuarioServiceTest {
 
             when(passwordEncoder.encode("teste123*")).thenReturn("luanWasHere");
 
+            Usuario admin = criarUsuarioComCargo(2L, "administracao");
+            when(usuarioRepository.findByEmail("admin")).thenReturn(Optional.of(admin));
+
             Usuario usuarioSalvo = new Usuario(tipo, "Marcos Vinicius", "marcos@gmail.com", "11935234123", "luanWasHere");
             usuarioSalvo.setId(1L);
             when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
@@ -112,6 +115,10 @@ class UsuarioServiceTest {
             assertEquals("Marcos Vinicius", response.getNome());
             assertEquals("marcos@gmail.com", response.getEmail());
             assertEquals("11935234123", response.getTelefone());
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository).save(captor.capture());
+            assertEquals(admin, captor.getValue().getCriadoPor());
         }
 
         @Test
@@ -134,6 +141,8 @@ class UsuarioServiceTest {
             when(tipoUsuarioRepository.findById(1L)).thenReturn(Optional.of(tipo));
 
             when(passwordEncoder.encode("teste123*")).thenReturn("senhaCriptografada");
+            when(usuarioRepository.findByEmail("admin"))
+                    .thenReturn(Optional.of(criarUsuarioComCargo(2L, "administracao")));
             Usuario usuarioSalvo = new Usuario(tipo, "Novo root", "root@gmail.com",
                     "11935234123", "senhaCriptografada");
             usuarioSalvo.setId(1L);
@@ -173,6 +182,9 @@ class UsuarioServiceTest {
             condominio.setNome("Condomínio LIV");
             when(condominioRepository.findById(1L)).thenReturn(Optional.of(condominio));
 
+            Usuario admin = criarUsuarioComCargo(2L, "administracao");
+            when(usuarioRepository.findByEmail("admin")).thenReturn(Optional.of(admin));
+
             Usuario usuarioSalvo = new Usuario(tipo, "Marcos Vinicius", "marcos@gmail.com", "11935234123", "senhaCriptografada");
             usuarioSalvo.setId(1L);
             usuarioSalvo.setCondominio(condominio);
@@ -184,6 +196,10 @@ class UsuarioServiceTest {
             assertEquals("marcos@gmail.com", response.getEmail());
             assertEquals("11935234123", response.getTelefone());
             assertNotNull(response.getCondominio());
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository).save(captor.capture());
+            assertEquals(admin, captor.getValue().getCriadoPor());
         }
 
         @Test
@@ -864,6 +880,23 @@ class UsuarioServiceTest {
         }
 
         @Test
+        @DisplayName("Root não pode excluir usuário que arquivou outros usuários")
+        void naoExcluiUsuarioComHistoricoDeArquivamentos() {
+            mockAutenticacao("root@gmail.com", "ROLE_ROOT");
+            Usuario usuario = criarUsuarioComCargo(1L, "administracao");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(agendamentoRepository.existeAgendamentoDoUsuario(1L)).thenReturn(false);
+            when(saldoRepository.existsByAlunoId(1L)).thenReturn(false);
+            when(usuarioRepository.existsByArquivadoPor_Id(1L)).thenReturn(true);
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> usuarioService.deletarUsuarioPorId(1L));
+
+            assertEquals(409, exception.getStatusCode().value());
+            verify(usuarioRepository, never()).delete(any(Usuario.class));
+        }
+
+        @Test
         @DisplayName("Root não pode excluir o próprio usuário")
         void rootNaoExcluiASiMesmo() {
             mockAutenticacao("usuario1@gmail.com", "ROLE_ROOT");
@@ -897,13 +930,16 @@ class UsuarioServiceTest {
         void arquivarUsuario() {
             mockAutenticacaoAdmin();
             Usuario usuario = criarUsuarioComCargo(1L, "professor");
+            Usuario admin = criarUsuarioComCargo(2L, "administracao");
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.findByEmail("admin")).thenReturn(Optional.of(admin));
             when(agendamentoRepository.contarAgendamentosFuturosDoUsuario(eq(1L), any(LocalDate.class), anyList()))
                     .thenReturn(0L);
 
             usuarioService.arquivarUsuarioPorId(1L);
 
             assertTrue(usuario.isArquivado());
+            assertEquals(admin, usuario.getArquivadoPor());
             verify(usuarioRepository).save(usuario);
         }
 
@@ -970,13 +1006,16 @@ class UsuarioServiceTest {
         void rootArquivaAdministracao() {
             mockAutenticacao("root@gmail.com", "ROLE_ROOT");
             Usuario usuario = criarUsuarioComCargo(1L, "administracao");
+            Usuario root = criarUsuarioComCargo(2L, "root");
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.findByEmail("root@gmail.com")).thenReturn(Optional.of(root));
             when(agendamentoRepository.contarAgendamentosFuturosDoUsuario(eq(1L), any(LocalDate.class), anyList()))
                     .thenReturn(0L);
 
             usuarioService.arquivarUsuarioPorId(1L);
 
             assertTrue(usuario.isArquivado());
+            assertEquals(root, usuario.getArquivadoPor());
         }
 
         @Test
@@ -1013,11 +1052,13 @@ class UsuarioServiceTest {
             mockAutenticacaoAdmin();
             Usuario usuario = criarUsuarioComCargo(1L, "aluno");
             usuario.setArquivadoEm(LocalDateTime.now());
+            usuario.setArquivadoPor(criarUsuarioComCargo(2L, "administracao"));
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
 
             usuarioService.desarquivarUsuarioPorId(1L);
 
             assertFalse(usuario.isArquivado());
+            assertNull(usuario.getArquivadoPor());
             verify(usuarioRepository).save(usuario);
         }
 
