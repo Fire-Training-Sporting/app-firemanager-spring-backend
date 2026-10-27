@@ -324,6 +324,29 @@ class AgendamentoServiceTest {
             );
             assertEquals(409, exception.getStatusCode().value());
         }
+
+        @Test
+        @DisplayName("Criar Agendamento Falho - Professor arquivado")
+        void criarAgendamentoProfessorArquivado() {
+            Usuario aluno = criarAluno();
+            Usuario professor = criarProfessor();
+            professor.setArquivadoEm(LocalDateTime.now());
+            Servico servico = criarServico();
+            Saldo saldo = criarSaldo(aluno, servico, 5.0);
+
+            lenient().when(saldoRepository.findByAlunoIdAndServicoId(1L, 1L)).thenReturn(Optional.of(saldo));
+            lenient().when(agendamentoRepository.findByProfessorIdAndDataAndStatusNot(eq(2L), any(LocalDate.class), eq("cancelado")))
+                    .thenReturn(List.of());
+            lenient().when(usuarioRepository.findById(1L)).thenReturn(Optional.of(aluno));
+            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(professor));
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> agendamentoService.criarAgendamento(criarRequest())
+            );
+            assertEquals(409, exception.getStatusCode().value());
+            assertTrue(exception.getReason().contains("arquivado"));
+            verify(agendamentoRepository, never()).save(any(Agendamento.class));
+        }
     }
 
     @Nested

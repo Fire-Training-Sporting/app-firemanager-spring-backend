@@ -53,6 +53,29 @@ public class Usuario {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "criado_por", updatable = false)
+    private Usuario criadoPor;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "arquivado_em")
+    private LocalDateTime arquivadoEm;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "arquivado_por")
+    private Usuario arquivadoPor;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "desarquivado_em")
+    private LocalDateTime desarquivadoEm;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "desarquivado_por")
+    private Usuario desarquivadoPor;
+
     public Usuario() {
     }
 
@@ -145,5 +168,50 @@ public class Usuario {
 
     public LocalDateTime getCriadoEm() {
         return criadoEm;
+    }
+
+    public Usuario getCriadoPor() {
+        return criadoPor;
+    }
+
+    public void setCriadoPor(Usuario criadoPor) {
+        this.criadoPor = criadoPor;
+    }
+
+    public LocalDateTime getArquivadoEm() {
+        return arquivadoEm;
+    }
+
+    public void setArquivadoEm(LocalDateTime arquivadoEm) {
+        this.arquivadoEm = arquivadoEm;
+    }
+
+    public Usuario getArquivadoPor() {
+        return arquivadoPor;
+    }
+
+    public void setArquivadoPor(Usuario arquivadoPor) {
+        this.arquivadoPor = arquivadoPor;
+    }
+
+    public LocalDateTime getDesarquivadoEm() {
+        return desarquivadoEm;
+    }
+
+    public void setDesarquivadoEm(LocalDateTime desarquivadoEm) {
+        this.desarquivadoEm = desarquivadoEm;
+    }
+
+    public Usuario getDesarquivadoPor() {
+        return desarquivadoPor;
+    }
+
+    public void setDesarquivadoPor(Usuario desarquivadoPor) {
+        this.desarquivadoPor = desarquivadoPor;
+    }
+
+    @JsonIgnore
+    public boolean isArquivado() {
+        return arquivadoEm != null;
     }
 }
