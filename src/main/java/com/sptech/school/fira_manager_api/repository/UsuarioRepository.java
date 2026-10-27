@@ -18,6 +18,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long>, JpaSpec
     Optional<Usuario> findByTelefone(String telefone);
     boolean existsByArquivadoPor_Id(Long arquivadoPorId);
     boolean existsByCriadoPor_Id(Long criadoPorId);
+    boolean existsByDesarquivadoPor_Id(Long desarquivadoPorId);
     Boolean existsByEmail(String email);
     Boolean existsByTelefone(String telefone);
     Boolean existsByNome(String nome);

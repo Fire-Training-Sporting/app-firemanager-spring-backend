@@ -930,6 +930,8 @@ class UsuarioServiceTest {
         void arquivarUsuario() {
             mockAutenticacaoAdmin();
             Usuario usuario = criarUsuarioComCargo(1L, "professor");
+            usuario.setDesarquivadoEm(LocalDateTime.now().minusDays(1));
+            usuario.setDesarquivadoPor(criarUsuarioComCargo(3L, "root"));
             Usuario admin = criarUsuarioComCargo(2L, "administracao");
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.findByEmail("admin")).thenReturn(Optional.of(admin));
@@ -940,6 +942,8 @@ class UsuarioServiceTest {
 
             assertTrue(usuario.isArquivado());
             assertEquals(admin, usuario.getArquivadoPor());
+            assertNull(usuario.getDesarquivadoEm());
+            assertNull(usuario.getDesarquivadoPor());
             verify(usuarioRepository).save(usuario);
         }
 
@@ -1053,12 +1057,16 @@ class UsuarioServiceTest {
             Usuario usuario = criarUsuarioComCargo(1L, "aluno");
             usuario.setArquivadoEm(LocalDateTime.now());
             usuario.setArquivadoPor(criarUsuarioComCargo(2L, "administracao"));
+            Usuario admin = criarUsuarioComCargo(3L, "administracao");
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.findByEmail("admin")).thenReturn(Optional.of(admin));
 
             usuarioService.desarquivarUsuarioPorId(1L);
 
             assertFalse(usuario.isArquivado());
             assertNull(usuario.getArquivadoPor());
+            assertNotNull(usuario.getDesarquivadoEm());
+            assertEquals(admin, usuario.getDesarquivadoPor());
             verify(usuarioRepository).save(usuario);
         }
 

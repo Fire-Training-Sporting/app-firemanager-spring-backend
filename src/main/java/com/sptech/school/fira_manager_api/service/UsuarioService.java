@@ -369,7 +369,9 @@ public class UsuarioService {
                     "Usuário possui histórico de agendamentos ou saldos. Arquive-o em vez de excluir");
         }
 
-        if (usuarioRepository.existsByArquivadoPor_Id(id) || usuarioRepository.existsByCriadoPor_Id(id)) {
+        if (usuarioRepository.existsByArquivadoPor_Id(id)
+                || usuarioRepository.existsByDesarquivadoPor_Id(id)
+                || usuarioRepository.existsByCriadoPor_Id(id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Usuário possui histórico de cadastros ou arquivamentos. Arquive-o em vez de excluir");
         }
@@ -406,6 +408,8 @@ public class UsuarioService {
 
         usuario.setArquivadoEm(LocalDateTime.now());
         usuario.setArquivadoPor(arquivador);
+        usuario.setDesarquivadoEm(null);
+        usuario.setDesarquivadoPor(null);
         usuarioRepository.save(usuario);
 
         log.info("Usuário arquivado - id={}, arquivadoPor={}", id, arquivador.getId());
@@ -421,11 +425,15 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Usuário não está arquivado");
         }
 
+        Usuario desarquivador = buscarUsuarioAutenticado();
+
         usuario.setArquivadoEm(null);
         usuario.setArquivadoPor(null);
+        usuario.setDesarquivadoEm(LocalDateTime.now());
+        usuario.setDesarquivadoPor(desarquivador);
         usuarioRepository.save(usuario);
 
-        log.info("Usuário desarquivado - id={}", id);
+        log.info("Usuário desarquivado - id={}, desarquivadoPor={}", id, desarquivador.getId());
     }
 
     private void validarPermissaoArquivamento(Usuario usuario) {

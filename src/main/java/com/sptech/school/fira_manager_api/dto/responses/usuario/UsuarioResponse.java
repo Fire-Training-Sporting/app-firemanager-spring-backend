@@ -51,6 +51,15 @@ public class UsuarioResponse {
     @Schema(description = "Nome do usuário que realizou o arquivamento. Null se estiver ativo", example = "Maria Souza")
     private String arquivadoPorNome;
 
+    @Schema(description = "Data do último desarquivamento. Null se nunca foi desarquivado ou se foi arquivado novamente", example = "03/04/2026 11:43:49")
+    private LocalDateTime desarquivadoEm;
+
+    @Schema(description = "ID do usuário que realizou o último desarquivamento. Null se não houver", example = "1")
+    private Long desarquivadoPorId;
+
+    @Schema(description = "Nome do usuário que realizou o último desarquivamento. Null se não houver", example = "Maria Souza")
+    private String desarquivadoPorNome;
+
     public UsuarioResponse(Long id, String nome, String email, String telefone) {
         this.id = id;
         this.nome = nome;
@@ -171,5 +180,29 @@ public class UsuarioResponse {
 
     public void setArquivadoPorNome(String arquivadoPorNome) {
         this.arquivadoPorNome = arquivadoPorNome;
+    }
+
+    public LocalDateTime getDesarquivadoEm() {
+        return desarquivadoEm;
+    }
+
+    public void setDesarquivadoEm(LocalDateTime desarquivadoEm) {
+        this.desarquivadoEm = desarquivadoEm;
+    }
+
+    public Long getDesarquivadoPorId() {
+        return desarquivadoPorId;
+    }
+
+    public void setDesarquivadoPorId(Long desarquivadoPorId) {
+        this.desarquivadoPorId = desarquivadoPorId;
+    }
+
+    public String getDesarquivadoPorNome() {
+        return desarquivadoPorNome;
+    }
+
+    public void setDesarquivadoPorNome(String desarquivadoPorNome) {
+        this.desarquivadoPorNome = desarquivadoPorNome;
     }
 }

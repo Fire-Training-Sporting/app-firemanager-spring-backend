@@ -55,6 +55,11 @@ public class UsuarioMapper {
             response.setArquivadoPorId(usuario.getArquivadoPor().getId());
             response.setArquivadoPorNome(usuario.getArquivadoPor().getNome());
         }
+        response.setDesarquivadoEm(usuario.getDesarquivadoEm());
+        if (usuario.getDesarquivadoPor() != null) {
+            response.setDesarquivadoPorId(usuario.getDesarquivadoPor().getId());
+            response.setDesarquivadoPorNome(usuario.getDesarquivadoPor().getNome());
+        }
         return response;
     }
 
