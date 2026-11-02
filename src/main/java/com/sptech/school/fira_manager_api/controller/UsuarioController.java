@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -69,7 +70,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.logarUsuario(dto));
     }
 
-    @Operation(summary = "Lista usuários", description = "Retorna todos os usuários cadastrados ou filtra por nome")
+    @Operation(summary = "Lista usuários", description = "Retorna os usuários cadastrados ou filtra por nome. Por padrão retorna apenas usuários ativos (status=ATIVO|ARQUIVADO|TODOS)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de usuários retornada com sucesso",
                     content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
@@ -82,9 +83,36 @@ public class UsuarioController {
                                 @RequestParam(required = false) List<String> tipoUsuarioCargo,
                                 @RequestParam(required = false) String campo,
                                 @RequestParam(required = false) String busca,
+                                @RequestParam(required = false) String status,
                         @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
                         return ResponseEntity.ok(usuarioService.buscarUsuarios(
-                                pageable, nome, tipoUsuarioId, tipoUsuarioCargo, campo, busca));
+                                pageable, nome, tipoUsuarioId, tipoUsuarioCargo, campo, busca, status));
+    }
+
+    @Operation(summary = "Arquiva usuário por ID", description = "Arquiva (soft delete) um usuário. Usuários arquivados não podem acessar o sistema, mas mantêm o histórico")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Usuário arquivado com sucesso", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sem permissão para arquivar este usuário", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Usuário já arquivado ou com agendamentos futuros", content = @Content)
+    })
+    @PatchMapping("/{id}/arquivar")
+    public ResponseEntity<Void> arquivarUsuarioPorId(@PathVariable Long id) {
+        usuarioService.arquivarUsuarioPorId(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Desarquiva usuário por ID", description = "Reativa um usuário arquivado")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Usuário desarquivado com sucesso", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sem permissão para desarquivar este usuário", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Usuário não está arquivado", content = @Content)
+    })
+    @PatchMapping("/{id}/desarquivar")
+    public ResponseEntity<Void> desarquivarUsuarioPorId(@PathVariable Long id) {
+        usuarioService.desarquivarUsuarioPorId(id);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Busca usuário por ID", description = "Retorna os dados de um usuário específico pelo ID")
@@ -112,10 +140,12 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.atualizarUsuarioPorId(id, dto));
     }
 
-    @Operation(summary = "Deleta usuário por ID", description = "Deleta um usuário do sistema")
+    @Operation(summary = "Deleta usuário por ID", description = "Exclui definitivamente um usuário sem histórico. Somente root")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Somente root pode excluir usuários", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Usuário possui histórico — deve ser arquivado", content = @Content)
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarUsuarioPorId(@PathVariable Long id) {

@@ -33,6 +33,33 @@ public class UsuarioResponse {
     @Schema(description = "Data de criação do usuário", example = "03/04/2026 11:43:49")
     private LocalDateTime criadoEm;
 
+    @Schema(description = "ID do usuário que realizou o cadastro. Null para usuários criados pelo sistema", example = "1")
+    private Long criadoPorId;
+
+    @Schema(description = "Nome do usuário que realizou o cadastro. Null para usuários criados pelo sistema", example = "Maria Souza")
+    private String criadoPorNome;
+
+    @Schema(description = "Indica se o usuário está arquivado", example = "false")
+    private Boolean arquivado;
+
+    @Schema(description = "Data em que o usuário foi arquivado. Null se estiver ativo", example = "03/04/2026 11:43:49")
+    private LocalDateTime arquivadoEm;
+
+    @Schema(description = "ID do usuário que realizou o arquivamento. Null se estiver ativo", example = "1")
+    private Long arquivadoPorId;
+
+    @Schema(description = "Nome do usuário que realizou o arquivamento. Null se estiver ativo", example = "Maria Souza")
+    private String arquivadoPorNome;
+
+    @Schema(description = "Data do último desarquivamento. Null se nunca foi desarquivado ou se foi arquivado novamente", example = "03/04/2026 11:43:49")
+    private LocalDateTime desarquivadoEm;
+
+    @Schema(description = "ID do usuário que realizou o último desarquivamento. Null se não houver", example = "1")
+    private Long desarquivadoPorId;
+
+    @Schema(description = "Nome do usuário que realizou o último desarquivamento. Null se não houver", example = "Maria Souza")
+    private String desarquivadoPorNome;
+
     public UsuarioResponse(Long id, String nome, String email, String telefone) {
         this.id = id;
         this.nome = nome;
@@ -105,5 +132,77 @@ public class UsuarioResponse {
 
     public void setCriadoEm(LocalDateTime criadoEm) {
         this.criadoEm = criadoEm;
+    }
+
+    public Long getCriadoPorId() {
+        return criadoPorId;
+    }
+
+    public void setCriadoPorId(Long criadoPorId) {
+        this.criadoPorId = criadoPorId;
+    }
+
+    public String getCriadoPorNome() {
+        return criadoPorNome;
+    }
+
+    public void setCriadoPorNome(String criadoPorNome) {
+        this.criadoPorNome = criadoPorNome;
+    }
+
+    public Boolean getArquivado() {
+        return arquivado;
+    }
+
+    public void setArquivado(Boolean arquivado) {
+        this.arquivado = arquivado;
+    }
+
+    public LocalDateTime getArquivadoEm() {
+        return arquivadoEm;
+    }
+
+    public void setArquivadoEm(LocalDateTime arquivadoEm) {
+        this.arquivadoEm = arquivadoEm;
+    }
+
+    public Long getArquivadoPorId() {
+        return arquivadoPorId;
+    }
+
+    public void setArquivadoPorId(Long arquivadoPorId) {
+        this.arquivadoPorId = arquivadoPorId;
+    }
+
+    public String getArquivadoPorNome() {
+        return arquivadoPorNome;
+    }
+
+    public void setArquivadoPorNome(String arquivadoPorNome) {
+        this.arquivadoPorNome = arquivadoPorNome;
+    }
+
+    public LocalDateTime getDesarquivadoEm() {
+        return desarquivadoEm;
+    }
+
+    public void setDesarquivadoEm(LocalDateTime desarquivadoEm) {
+        this.desarquivadoEm = desarquivadoEm;
+    }
+
+    public Long getDesarquivadoPorId() {
+        return desarquivadoPorId;
+    }
+
+    public void setDesarquivadoPorId(Long desarquivadoPorId) {
+        this.desarquivadoPorId = desarquivadoPorId;
+    }
+
+    public String getDesarquivadoPorNome() {
+        return desarquivadoPorNome;
+    }
+
+    public void setDesarquivadoPorNome(String desarquivadoPorNome) {
+        this.desarquivadoPorNome = desarquivadoPorNome;
     }
 }

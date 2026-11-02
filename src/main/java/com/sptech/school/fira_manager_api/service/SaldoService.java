@@ -127,8 +127,7 @@ public class SaldoService {
     }
 
     public SaldoResponse criarSaldo(SaldoRequest dto) {
-        Usuario saldoUsuario = usuarioRepository.findById(dto.getAluno())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        Usuario saldoUsuario = buscarAlunoAtivo(dto.getAluno());
 
         Servico servicoSaldo = servicoRepository.findById(dto.getServico())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
@@ -150,6 +149,18 @@ public class SaldoService {
         return toSaldoResponse(saldo);
     }
 
+    private Usuario buscarAlunoAtivo(Long alunoId) {
+        Usuario aluno = usuarioRepository.findById(alunoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+
+        if (aluno.isArquivado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Aluno arquivado não pode receber saldo. Desarquive-o primeiro");
+        }
+
+        return aluno;
+    }
+
     public List<SaldoResponse> listarSaldos() {
         return saldoRepository.findAll()
                 .stream()
@@ -168,8 +179,7 @@ public class SaldoService {
         Saldo saldo = saldoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
 
-        usuarioRepository.findById(dto.getAluno())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        buscarAlunoAtivo(dto.getAluno());
         servicoRepository.findById(dto.getServico())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
 

@@ -36,7 +36,7 @@ public class UsuarioMapper {
                 ? CondominioMapper.toResponse(usuario.getCondominio())
                 : null;
 
-        return new UsuarioResponse(
+        UsuarioResponse response = new UsuarioResponse(
                 usuario.getId(),
                 tipoResponse,
                 usuario.getNome(),
@@ -45,6 +45,22 @@ public class UsuarioMapper {
                 condominioResponse,
                 usuario.getCriadoEm()
         );
+        if (usuario.getCriadoPor() != null) {
+            response.setCriadoPorId(usuario.getCriadoPor().getId());
+            response.setCriadoPorNome(usuario.getCriadoPor().getNome());
+        }
+        response.setArquivado(usuario.isArquivado());
+        response.setArquivadoEm(usuario.getArquivadoEm());
+        if (usuario.getArquivadoPor() != null) {
+            response.setArquivadoPorId(usuario.getArquivadoPor().getId());
+            response.setArquivadoPorNome(usuario.getArquivadoPor().getNome());
+        }
+        response.setDesarquivadoEm(usuario.getDesarquivadoEm());
+        if (usuario.getDesarquivadoPor() != null) {
+            response.setDesarquivadoPorId(usuario.getDesarquivadoPor().getId());
+            response.setDesarquivadoPorNome(usuario.getDesarquivadoPor().getNome());
+        }
+        return response;
     }
 
     public static UsuarioTokenResponse toTokenResponse(Usuario usuario, String token) {

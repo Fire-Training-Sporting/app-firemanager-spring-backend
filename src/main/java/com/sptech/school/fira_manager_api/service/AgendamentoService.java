@@ -115,8 +115,15 @@ public class AgendamentoService {
     }
 
     private Usuario buscarUsuario(Long id, String tipo) {
-        return usuarioRepository.findById(id)
+        Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, tipo + " não encontrado"));
+
+        if (usuario.isArquivado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    tipo + " " + usuario.getNome() + " está arquivado e não pode ser vinculado a agendamentos");
+        }
+
+        return usuario;
     }
 
     private Servico buscarServico(Long id) {
