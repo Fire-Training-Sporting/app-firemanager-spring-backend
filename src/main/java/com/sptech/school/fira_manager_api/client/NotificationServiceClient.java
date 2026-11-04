@@ -2,6 +2,7 @@ package com.sptech.school.fira_manager_api.client;
 
 import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailAlunoNotification;
 import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailProfessorNotification;
+import com.sptech.school.fira_manager_api.dto.requests.notificationService.EmailRecuperacaoSenhaNotification;
 import com.sptech.school.fira_manager_api.rabbitmq.configuration.RabbitMQConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,14 @@ public class NotificationServiceClient {
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE_NOTIFICACAO,
                 RabbitMQConfig.ROUTING_KEY_PROFESSOR,
+                request
+        );
+    }
+
+    public void notificarRecuperacaoSenha(EmailRecuperacaoSenhaNotification request) {
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_NOTIFICACAO,
+                RabbitMQConfig.ROUTING_KEY_RECUPERACAO_SENHA,
                 request
         );
     }

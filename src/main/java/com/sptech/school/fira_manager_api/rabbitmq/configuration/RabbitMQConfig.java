@@ -15,6 +15,7 @@ public class RabbitMQConfig {
 
     public static final String ROUTING_KEY_ALUNO = "notificacao.aluno";
     public static final String ROUTING_KEY_PROFESSOR = "notificacao.professor";
+    public static final String ROUTING_KEY_RECUPERACAO_SENHA = "notificacao.recuperacao-senha";
 
     public static final String FILA_NOTIFICACAO_ALUNO = "fila.notificacao.aluno";
     public static final String FILA_NOTIFICACAO_PROFESSOR = "fila.notificacao.professor";
