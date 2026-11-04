@@ -6,6 +6,8 @@ import java.util.List;
 import com.sptech.school.fira_manager_api.dto.responses.saldoTransacoes.SaldoTransacaoResponse;
 import com.sptech.school.fira_manager_api.model.SaldoTransacao;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,8 @@ public class SaldoService {
     private final ServicoRepository servicoRepository;
     private final AgendamentoRepository agendamentoRepository;
     private final SaldoTransacaoRepository saldoTransacaoRepository;
+    private static final Logger log = LoggerFactory.getLogger(SaldoService.class);
+
 
     public SaldoService(SaldoRepository saldoRepository, UsuarioRepository usuarioRepository, ServicoRepository servicoRepository, AgendamentoRepository agendamentoRepository, SaldoTransacaoRepository saldoTransacaoRepository) {
         this.saldoRepository = saldoRepository;
@@ -110,6 +114,9 @@ public class SaldoService {
         List<SaldoTransacao> expiradas = saldoTransacaoRepository
                 .findByDataExpiracaoBeforeAndQuantidadeRestanteGreaterThan(LocalDate.now(), 0.0);
 
+        log.info("Job de expiração de saldos rodando - {} transações expiradas encontradas",
+                expiradas.size());
+
         for (SaldoTransacao transacao : expiradas) {
             Saldo saldo = transacao.getSaldo();
             saldo.setQuantidade(Math.max(0.0, saldo.getQuantidade() - transacao.getQuantidadeRestante()));
@@ -120,8 +127,7 @@ public class SaldoService {
     }
 
     public SaldoResponse criarSaldo(SaldoRequest dto) {
-        Usuario saldoUsuario = usuarioRepository.findById(dto.getAluno())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        Usuario saldoUsuario = buscarAlunoAtivo(dto.getAluno());
 
         Servico servicoSaldo = servicoRepository.findById(dto.getServico())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
@@ -137,7 +143,22 @@ public class SaldoService {
 
         adicionarLote(saldo, dto.getQuantidade());
 
+        log.info("Saldo adicionado - alunoId={}, servicoId={}, quantidade={}",
+                dto.getAluno(), dto.getServico(), dto.getQuantidade());
+
         return toSaldoResponse(saldo);
+    }
+
+    private Usuario buscarAlunoAtivo(Long alunoId) {
+        Usuario aluno = usuarioRepository.findById(alunoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+
+        if (aluno.isArquivado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Aluno arquivado não pode receber saldo. Desarquive-o primeiro");
+        }
+
+        return aluno;
     }
 
     public List<SaldoResponse> listarSaldos() {
@@ -158,8 +179,7 @@ public class SaldoService {
         Saldo saldo = saldoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não encontrado"));
 
-        usuarioRepository.findById(dto.getAluno())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado"));
+        buscarAlunoAtivo(dto.getAluno());
         servicoRepository.findById(dto.getServico())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado"));
 
@@ -169,10 +189,15 @@ public class SaldoService {
     }
 
     public void deletarSaldoPorId(Long id) {
+
         if (!saldoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Saldo não existe!");
         }
+
         saldoRepository.deleteById(id);
+
+        log.info("Saldo deletado - id={}",
+                id);
     }
 
     public ProfessorSaldoResponse buscarSaldoProfessorPorId(Long id) {
