@@ -44,6 +44,8 @@ public class SegurancaConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/usuarios/login").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/recuperacao-senha", "/api/recuperacao-senha/redefinir").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/usuarios")
                             .hasAnyRole("ADMINISTRACAO", "ROOT")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/usuarios")
