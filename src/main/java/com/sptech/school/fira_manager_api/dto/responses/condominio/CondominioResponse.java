@@ -46,6 +46,9 @@ public class CondominioResponse {
         this.numero = numero;
     }
 
+    public CondominioResponse() {
+    }
+
     public Long getId() {
         return id;
     }
