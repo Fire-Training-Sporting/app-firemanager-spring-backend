@@ -3,8 +3,6 @@ package com.sptech.school.fira_manager_api.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.sptech.school.fira_manager_api.mapper.usuario.UsuarioMapper;
 import org.slf4j.Logger;
@@ -38,10 +36,6 @@ import com.sptech.school.fira_manager_api.config.GerenciadorTokenJwt;
 import com.sptech.school.fira_manager_api.dto.UsuarioDetalhesDto;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.LoginRequest;
 import com.sptech.school.fira_manager_api.dto.requests.usuario.UsuarioRequest;
-import com.sptech.school.fira_manager_api.dto.responses.condominio.CondominioResponse;
-import com.sptech.school.fira_manager_api.dto.responses.tipoUsuario.TipoUsuarioResponse;
-import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioResponse;
-import com.sptech.school.fira_manager_api.dto.responses.usuario.UsuarioTokenResponse;
 import com.sptech.school.fira_manager_api.dto.responses.PaginaResponse;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.model.TipoUsuario;
@@ -63,11 +57,9 @@ public class UsuarioService {
     private final AuthenticationManager authenticationManager;
     private final AgendamentoRepository agendamentoRepository;
     private final SaldoRepository saldoRepository;
+    private final LoginTentativaService loginTentativaService;
     private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
-    private static final int MAX_TENTATIVAS = 5;
-    private static final int MINUTOS_BLOQUEADOS = 15;
     private static final List<String> STATUS_AGENDAMENTO_ATIVO = List.of("pendente", "confirmado");
-    private final Map<String, ControleLoginService> controleLogins = new ConcurrentHashMap<>();
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           TipoUsuarioRepository tipoUsuarioRepository,
@@ -76,7 +68,8 @@ public class UsuarioService {
                           GerenciadorTokenJwt gerenciadorTokenJwt,
                           @Lazy AuthenticationManager authenticationManager,
                           AgendamentoRepository agendamentoRepository,
-                          SaldoRepository saldoRepository) {
+                          SaldoRepository saldoRepository,
+                          LoginTentativaService loginTentativaService) {
         this.usuarioRepository = usuarioRepository;
         this.tipoUsuarioRepository = tipoUsuarioRepository;
         this.condominioRepository = condominioRepository;
@@ -85,6 +78,7 @@ public class UsuarioService {
         this.authenticationManager = authenticationManager;
         this.agendamentoRepository = agendamentoRepository;
         this.saldoRepository = saldoRepository;
+        this.loginTentativaService = loginTentativaService;
     }
 
     public UsuarioResponse criarUsuario(UsuarioRequest dto) {
@@ -147,9 +141,7 @@ public class UsuarioService {
 
     public UsuarioTokenResponse logarUsuario(LoginRequest dto) {
 
-        ControleLoginService controle = controleLogins.computeIfAbsent(dto.getEmail(), email -> new ControleLoginService());
-
-        if (controle.estaBloqueado()) {
+        if (loginTentativaService.estaBloqueado(dto.getEmail())) {
             throw new ResponseStatusException(HttpStatus.LOCKED, "Conta bloqueada. Tente novamente mais tarde.");
         }
 
@@ -160,7 +152,7 @@ public class UsuarioService {
 
             SecurityContextHolder.getContext().setAuthentication(autenticacao);
 
-            controle.resetar();
+            loginTentativaService.resetar(dto.getEmail());
 
             Object principal = autenticacao.getPrincipal();
             UsuarioDetalhesDto usuarioDetalhes;
@@ -184,17 +176,15 @@ public class UsuarioService {
 
         } catch (BadCredentialsException e) {
 
-            controle.incrementar();
-
-            if (controle.getTentativas() >= MAX_TENTATIVAS) {
-                controle.bloquear(LocalDateTime.now().plusMinutes(MINUTOS_BLOQUEADOS));
-            }
+            loginTentativaService.registrarFalha(dto.getEmail());
 
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+
         } catch (DisabledException e) {
-            controle.resetar();
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Usuário arquivado. Entre em contato com a administração");
+
+            loginTentativaService.resetar(dto.getEmail());
+
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário arquivado. Entre em contato com a administração");
         }
     }
 

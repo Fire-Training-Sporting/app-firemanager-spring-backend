@@ -7,6 +7,8 @@ import com.sptech.school.fira_manager_api.mapper.condominio.CondominioMapper;
 import com.sptech.school.fira_manager_api.model.Condominio;
 import com.sptech.school.fira_manager_api.repository.CondominioRepository;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 @Service
 public class CondominioService {
@@ -29,16 +32,18 @@ public class CondominioService {
         this.condominioRepository = condominioRepository;
     }
 
+    @CacheEvict(cacheNames = "condominios", allEntries = true)
     public CondominioResponse adicionarNovoCondominio(CondominioRequest dto) {
         Condominio condominioNovo = CondominioMapper.toEntity(dto);
         return CondominioMapper.toResponse(condominioRepository.save(condominioNovo));
     }
 
+    @Cacheable(cacheNames = "condominios", key = "'todos'")
     public List<CondominioResponse> obterCondominios() {
         return condominioRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
                 .map(CondominioMapper::toResponse)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public PaginaResponse<CondominioResponse> obterCondominios(Pageable pageable, String campo, String busca) {
@@ -88,6 +93,7 @@ public class CondominioService {
         return PaginaResponse.from(pagina);
     }
 
+    @CacheEvict(cacheNames = "condominios", allEntries = true)
     public CondominioResponse atualizarCondominio(Long id, CondominioRequest dto) {
         Condominio condominio = condominioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "O Condominio solicitado não existe."));
@@ -102,6 +108,7 @@ public class CondominioService {
         return CondominioMapper.toResponse(condominioRepository.save(condominio));
     }
 
+    @CacheEvict(cacheNames = "condominios", allEntries = true)
     public void deletarCondominio(Long id) {
         if (!condominioRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "O Condominio não existe");
