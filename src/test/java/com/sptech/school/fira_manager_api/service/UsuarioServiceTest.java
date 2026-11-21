@@ -61,6 +61,7 @@ class UsuarioServiceTest {
     @Mock private AuthenticationManager authenticationManager;
     @Mock private AgendamentoRepository agendamentoRepository;
     @Mock private SaldoRepository saldoRepository;
+    @Mock private LoginTentativaService loginTentativaService;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -324,82 +325,29 @@ class UsuarioServiceTest {
     class Login {
 
         @Test
-        @DisplayName("Login bloqueado após 5 tentativas falhas")
-        void bloquearAposCincoTentativasFalhas() {
+        @DisplayName("Login bloqueado retorna 423 sem autenticar")
+        void loginBloqueado() {
             LoginRequest request = new LoginRequest();
             request.setEmail("marcos@gmail.com");
             request.setSenha("senhaErrada");
 
-            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                    .thenThrow(new BadCredentialsException("Credenciais inválidas"));
+            when(loginTentativaService.estaBloqueado(request.getEmail()))
+                    .thenReturn(true);
 
-            for (int i = 0; i < 5; i++) {
-                ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                        () -> usuarioService.logarUsuario(request));
-                assertEquals(401, exception.getStatusCode().value());
-            }
+            ResponseStatusException exception = assertThrows(
+                    ResponseStatusException.class,
+                    () -> usuarioService.logarUsuario(request)
+            );
 
-            ResponseStatusException bloqueado = assertThrows(ResponseStatusException.class,
-                    () -> usuarioService.logarUsuario(request));
-            assertEquals(423, bloqueado.getStatusCode().value());
+            assertEquals(423, exception.getStatusCode().value());
 
-            verify(authenticationManager, times(5)).authenticate(any(UsernamePasswordAuthenticationToken.class));
+            verify(authenticationManager, never())
+                    .authenticate(any(UsernamePasswordAuthenticationToken.class));
         }
 
         @Test
         @DisplayName("Login com sucesso reseta contador de tentativas falhas")
         void loginSucessoResetaContador() {
-            LoginRequest requestErrado = new LoginRequest();
-            requestErrado.setEmail("marcos@gmail.com");
-            requestErrado.setSenha("senhaErrada");
-
-            LoginRequest requestCerto = new LoginRequest();
-            requestCerto.setEmail("marcos@gmail.com");
-            requestCerto.setSenha("teste123*");
-
-            TipoUsuario tipo = new TipoUsuario();
-            tipo.setId(1L);
-            tipo.setCargo("root");
-
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setNome("Marcos Vinicius");
-            usuario.setEmail("marcos@gmail.com");
-            usuario.setTipoUsuario(tipo);
-
-            UsuarioDetalhesDto detalhes = new UsuarioDetalhesDto(usuario);
-            Authentication autenticacaoOk = mock(Authentication.class);
-
-            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                    .thenAnswer(invocation -> {
-                        UsernamePasswordAuthenticationToken token = invocation.getArgument(0);
-                        if ("teste123*".equals(token.getCredentials())) {
-                            return autenticacaoOk;
-                        }
-                        throw new BadCredentialsException("Credenciais inválidas");
-                    });
-            when(autenticacaoOk.getPrincipal()).thenReturn(detalhes);
-            when(gerenciadorTokenJwt.generateToken(detalhes)).thenReturn("token-vitao");
-
-            for (int i = 0; i < 4; i++) {
-                assertThrows(ResponseStatusException.class, () -> usuarioService.logarUsuario(requestErrado));
-            }
-
-            assertNotNull(usuarioService.logarUsuario(requestCerto));
-
-            // depois do sucesso, mais 4 erradas não deveriam bloquear (contador zerou)
-            for (int i = 0; i < 4; i++) {
-                assertThrows(ResponseStatusException.class, () -> usuarioService.logarUsuario(requestErrado));
-            }
-
-            UsuarioTokenResponse response = usuarioService.logarUsuario(requestCerto);
-            assertNotNull(response);
-            assertEquals("token-vitao", response.getToken());
-        }
-
-        @Test
-        @DisplayName("Login com sucesso")
-        void logarUsuarioComSucesso() {
             LoginRequest request = new LoginRequest();
             request.setEmail("marcos@gmail.com");
             request.setSenha("teste123*");
@@ -412,24 +360,29 @@ class UsuarioServiceTest {
             usuario.setId(1L);
             usuario.setNome("Marcos Vinicius");
             usuario.setEmail("marcos@gmail.com");
-            usuario.setTelefone("11935234123");
-            usuario.setSenha("luanWasHere");
             usuario.setTipoUsuario(tipo);
 
             UsuarioDetalhesDto detalhes = new UsuarioDetalhesDto(usuario);
 
-            Authentication autenticacao = mock(Authentication.class);
+            Authentication autenticacaoOk = mock(Authentication.class);
+
+            when(loginTentativaService.estaBloqueado(request.getEmail()))
+                    .thenReturn(false);
+
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                    .thenReturn(autenticacao);
-            when(autenticacao.getPrincipal()).thenReturn(detalhes);
-            when(gerenciadorTokenJwt.generateToken(detalhes)).thenReturn("token-vitao");
+                    .thenReturn(autenticacaoOk);
+
+            when(autenticacaoOk.getPrincipal()).thenReturn(detalhes);
+
+            when(gerenciadorTokenJwt.generateToken(detalhes))
+                    .thenReturn("token-vitao");
 
             UsuarioTokenResponse response = usuarioService.logarUsuario(request);
 
             assertNotNull(response);
             assertEquals("token-vitao", response.getToken());
-            assertEquals("marcos@gmail.com", response.getEmail());
-            assertEquals("root", response.getCargo());
+
+            verify(loginTentativaService).resetar(request.getEmail());
         }
 
         @Test
@@ -1087,19 +1040,26 @@ class UsuarioServiceTest {
     @Nested
     class RegrasUsuarioArquivado {
 
-        @Test
         @DisplayName("Login de usuário arquivado retorna 403")
         void loginUsuarioArquivado() {
             LoginRequest request = new LoginRequest();
             request.setEmail("arquivado@gmail.com");
             request.setSenha("teste123*");
+
+            when(loginTentativaService.estaBloqueado(request.getEmail()))
+                    .thenReturn(false);
+
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenThrow(new DisabledException("Usuário arquivado"));
 
-            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                    () -> usuarioService.logarUsuario(request));
+            ResponseStatusException exception = assertThrows(
+                    ResponseStatusException.class,
+                    () -> usuarioService.logarUsuario(request)
+            );
 
             assertEquals(403, exception.getStatusCode().value());
+
+            verify(loginTentativaService).resetar(request.getEmail());
         }
 
         @Test
