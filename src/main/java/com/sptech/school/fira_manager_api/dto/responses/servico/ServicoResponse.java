@@ -27,6 +27,9 @@ public class ServicoResponse {
         this.ativo = ativo;
     }
 
+    public ServicoResponse() {
+    }
+
     public Long getId() {
         return id;
     }
